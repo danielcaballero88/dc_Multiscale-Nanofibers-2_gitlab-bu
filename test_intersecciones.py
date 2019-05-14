@@ -474,24 +474,22 @@ class Layer(object):
             # tengo que chequear intersecciones de cada segmento de fibra1
             # contra cada segmento de cada fibra de fibras2 
             for seg1 in fibra1.segmentos:
-                    # me traigo todos los segmentos de las demas fibras
-                    segs2 = []
-                    for fibra2 in fibras2:
-                        segs2 += fibra2.segmentos
-                    # chequeo intersecciones con cada uno
-                    for seg2 in segs2:
-                        if seg1.get_if_intersectado() or seg2.get_if_intersectado():
-                            continue # estoy admitiendo solo una interseccion por segmento 
-                        else:
-                            # ahora si calculo intersecciones
-                            r_in = calcular_interseccion(seg1, seg2)
-                            if r_in is not None:
-                                # debo crear nodos interseccion y agregarlos a la lista
-                                nuevoNodo_in = Nodo.from_r(r_in) 
-                                self.add_nodo_interseccion(nuevoNodo_in)
-                                # ademas seteo los segmentos como intersectados
-                                seg1.set_as_intersectado()
-                                seg2.set_as_intersectado()
+                if seg1.get_if_intersectado():
+                    continue # solo estoy admitiendo una interseccion por segmento
+                # me traigo todos los segmentos de las demas fibras
+                segs2 = []
+                for fibra2 in fibras2:
+                    segs2 += fibra2.segmentos
+                # chequeo intersecciones con cada uno
+                for seg2 in segs2:
+                    if seg2.get_if_intersectado():
+                        continue # nuevamente solo una interseccion por segmento 
+                # ahora si calculo intersecciones
+                r_in = calcular_interseccion(seg1, seg2)
+                if r_in is not None:
+                    # debo crear nodos interseccion y agregarlos a la lista
+                    nuevoNodo_in = Nodo.from_r(r_in) 
+                    self.add_nodo_interseccion(nuevoNodo_in)
 
 
     def graficar(self):
@@ -552,11 +550,32 @@ class Rve(object):
 
 
 
-# rve instance
-layer1 = Layer(L=1.0, dl=0.1, dtheta=np.pi*0.1)
+# segment 1 
+r_0 = np.array([0.1, 0.0])
+nodo_0 = Nodo.from_r(r_0)
+theta = 0.25*np.pi
+dl = 1.0
+seg1 = Segmento.from_walk(nodo_0, theta, dl)
 
-for i in range(20):
-    layer1.make_fibra()
-layer1.calcular_interecciones()
+# segment 2
+r_0 = np.array([0.1, 1.5])
+nodo_0 = Nodo.from_r(r_0)
+theta = 0.0*np.pi
+dl = 2.0
+seg2 = Segmento.from_walk(nodo_0, theta, dl)
 
-layer1.graficar()
+xx_1 = [seg1.get_x0(), seg1.get_x1()]
+yy_1 = [seg1.get_y0(), seg1.get_y1()]
+
+xx_2 = [seg2.get_x0(), seg2.get_x1()]
+yy_2 = [seg2.get_y0(), seg2.get_y1()]
+
+
+r_in = calcular_interseccion(seg1, seg2)
+print r_in
+
+
+fig = plt.figure() 
+ax = fig.add_subplot(111) 
+ax.plot(xx_1,yy_1, xx_2,yy_2)
+plt.show()
