@@ -110,7 +110,7 @@ class Nodo(object):
 
 class Segmento(object):
     def __init__(self):
-        self.fibras = []
+        self.fibra = None
         self._n0 = None 
         self._n1 = None 
         self.intersectado = False # indica si el segmento sufrio intersecciones con otros
@@ -124,10 +124,6 @@ class Segmento(object):
         self.__right = 0
         self.__top = 0
         self.__left = 0
-
-    def add_fibra(self, fibra):
-        # agrego la fibra a la conectividad del segmento
-        self.fibras.append(fibra)
 
     @property
     def n0(self):
@@ -165,6 +161,7 @@ class Segmento(object):
     def add_nodo_interseccion(self, nodo_i):
         self.ni.append(nodo_i)
         nodo_i.add_segmento(self)
+        self.set_as_intersectado()
 
     def get_r0(self):
         return self.n0.r
@@ -320,15 +317,20 @@ class Segmento(object):
 class Fibra(object):
     def __init__(self):
         self.nodos = []
+        self.nodos_in = []
         self.segmentos = []
 
     def add_nodo(self, newNodo):
         self.nodos.append(newNodo)
         newNodo.add_fibra(self)
 
+    def add_nodo_interseccion(self, newNodo):
+        self.nodos_in.append(newNodo)
+        newNodo.add_fibra(self)
+
     def add_segmento(self, newSegmento):
         self.segmentos.append(newSegmento) 
-        newSegmento.add_fibra(self)
+        newSegmento.fibra = self
 
     def get_last_segmento(self):
         return self.segmentos[-1]
@@ -489,9 +491,13 @@ class Layer(object):
                                 # debo crear nodos interseccion y agregarlos a la lista
                                 nuevoNodo_in = Nodo.from_r(r_in) 
                                 self.add_nodo_interseccion(nuevoNodo_in)
+                                # agrego el nodo a las fibras y los segmentos
                                 # ademas seteo los segmentos como intersectados
-                                seg1.set_as_intersectado()
-                                seg2.set_as_intersectado()
+                                seg1.fibra.add_nodo_interseccion(nuevoNodo_in)
+                                seg2.fibra.add_nodo_interseccion(nuevoNodo_in)
+                                seg1.add_nodo_interseccion(nuevoNodo_in)
+                                seg2.add_nodo_interseccion(nuevoNodo_in)
+
 
 
     def graficar(self):
@@ -543,6 +549,77 @@ class Layer(object):
         # graficar
         plt.show()
 
+    def get_simplified_connectivity(self):
+        # calculo el numero efectivo de nodos (fronteras e intersecciones)
+        num_nodos = 0 
+        for n in self.nodos:
+            if n.get_if_frontera():
+                num_nodos += 1 
+        num_nodos_in = len(self.nodos_in)
+        num_nodos += num_nodos_in
+        # armo el array de coordenadas de nodos
+        coordenadas = np.zeros((num_nodos, 2), dtype=float)
+        # lo lleno con las coordenadas
+        j_n = 0
+        for n in self.nodos:
+            if n.get_if_frontera():
+                coordenadas[j_n,:] = n.r 
+                n.id_number = j_n
+                j_n += 1 
+        for n_in in self.nodos_in: 
+            coordenadas[j_n,:] = n_in.r 
+            n_in.id_number = j_n
+            j_n += 1
+        # ahora calculo la conectividad de las fibras
+        # primero el numero de nodos de cada fibra
+        # teniendo en cuenta los fronterizos y los interseccion
+        num_fibras = len(self.fibras)
+        num_nod_x_fibra = np.zeros(num_fibras, dtype=int)
+        for j_f, f in enumerate(self.fibras):
+            # numero de nodos por fibra de la fibra
+            num_nod_x_fibra[j_f] = 2 + len(f.nodos_in)
+        # ahora si la conectividad
+        max_nodos_por_fibra = np.max(num_nod_x_fibra)
+        conec_fibras = np.zeros( (num_fibras, max_nodos_por_fibra), dtype=int)
+        for j_f, f in enumerate(self.fibras):
+            num_nodos_f = num_nod_x_fibra[j_f]
+            conec_fibras[j_f,0] = f.nodos[0].id_number
+            for j_n_in, n_in in enumerate(f.nodos_in):
+                conec_fibras[j_f, j_n_in+1] = f.nodos_in[j_n_in].id_number
+            conec_fibras[j_f, num_nodos_f-1] = f.nodos[-1].id_number
+        # ahora conectividad de subfibras (entre dos nodos siempre)
+        # primero calculo la cantidad de subfibras
+        # en total y por fibra
+        num_sf_x_fibra = np.zeros(num_fibras, dtype=int)
+        for j_f in range(num_fibras):
+            num_nodos_f = num_nod_x_fibra[j_f]
+            num_sf_x_fibra[j_f] = num_nodos_f - 1
+        num_sf = np.sum(num_sf_x_fibra)
+        # ahora la conectividad de las sf
+        # y la conectividad de fibras en sf
+        max_sf_x_fibra = np.max(num_sf_x_fibra)
+        conec_sf = np.zeros( (num_sf, 2), dtype=int)
+        conec_f_sf = np.zeros( (num_fibras, max_sf_x_fibra), dtype=int)
+        j_sf = 0
+        for j_f in range(num_fibras):
+            for j_n_f in range(num_nod_x_fibra[j_f] - 1):
+                conec_f_sf[j_f, j_n_f] = j_sf
+                n0_id = conec_fibras[j_f, j_n_f]
+                n1_id = conec_fibras[j_f, j_n_f+1]
+                conec_sf[j_sf,:] = [n0_id, n1_id]
+                j_sf += 1
+        # print to debug 
+        for j_n in range(num_nodos):
+            print coordenadas[j_n,:]
+        for j_f in range(num_fibras):
+            print conec_fibras[j_f,:]
+        for j_sf in range(num_sf):
+            print conec_sf[j_sf,:]
+        for j_f in range(num_fibras):
+            print conec_f_sf[j_f,:]
+
+
+
 class Rve(object):
     def __init__(self):
         pass 
@@ -555,8 +632,10 @@ class Rve(object):
 # rve instance
 layer1 = Layer(L=1.0, dl=0.1, dtheta=np.pi*0.1)
 
-for i in range(20):
+for i in range(5):
     layer1.make_fibra()
 layer1.calcular_interecciones()
+
+layer1.get_simplified_connectivity()
 
 layer1.graficar()
