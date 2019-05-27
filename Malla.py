@@ -13,27 +13,33 @@ class Nodos(object):
         luego vienen los nodos interseccion
         """
         self.open = True # estado open significa que se pueden agregar nodos, false que no (estado operativo)
-        self.num_nod = 0 
-        self.num_nod_fr = 0 
-        self.num_nod_in = 0 
+        self.num = 0 
+        self.num_fr = 0 
+        self.num_in = 0 
         self.x0 = []  # coordenadas iniciales de los nodos 
         self.x = [] # coordenadas actuales
         self.tipos = [] 
         self.mask_fr = [] 
         self.mask_in = []
         for coor, tipo in zip(coors,tipos):
-            self.num_nod += 1 
+            self.num += 1 
             self.x0.append(coor) 
             self.x.append(coor) 
             if tipo == 1:
-                self.num_nod_fr += 1 
+                self.num_fr += 1 
                 self.tipos.append(1)
             elif tipo == 2:
-                self.num_nod_in += 1 
+                self.num_in += 1 
                 self.tipos.append(2)
             else: 
                 raise ValueError("tipo solo puede ser 1 (frontera) o 2 (interseccion)")
         self.cerrar()
+
+    def get_nodos_fr(self):
+        return self.x0[self.mask_fr]
+
+    def get_nodos_in(self):
+        return self.x0[self.mask_in]
 
     def abrir(self): 
         """ es necesario para agregar mas nodos """
@@ -45,7 +51,7 @@ class Nodos(object):
 
     def add_nodo(self, xnod, tipo):
         if self.open:
-            self.num_nod += 1 
+            self.num += 1 
             self.x0.append(xnod) 
             self.x.append(xnod)
             self.tipo.append(tipo) 
@@ -66,8 +72,8 @@ class Nodos(object):
         self.tipos = np.array(self.tipos, dtype=int)
         self.mask_fr = self.tipos == 1 
         self.mask_in = self.tipos == 2 
-        self.num_nod_fr = np.sum(self.mask_fr) 
-        self.num_nod_in = np.sum(self.mask_in)
+        self.num_fr = np.sum(self.mask_fr) 
+        self.num_in = np.sum(self.mask_in)
         self.open = False
 
 class Conectividad(object):
@@ -167,19 +173,149 @@ class Conectividad(object):
     #     """
     #     return self.jeT[self.ieT[elem1] : self.ieT[elem1+1]]
 
+class Iterador(object):
+    def __init__(self, n, x, ecuacion, ref_small, ref_big, ref_div, maxiter, tol):
+        self.n = n # tamano de la solcion (len(x))
+        self.x = x # solucion actualizada o iterada
+        self.dl1 = np.zeros(self.n, dtype=float) # necesario para evaluar convergencia
+        self.ecuacion = ecuacion # ecuacion iterable a resolver (dx = x-x1 = f(x1))
+        self.ref_small = ref_small # integer, referencia para desplazamientos pequenos
+        self.ref_big = ref_big # integer, referencia para desplazamientos grandes
+        self.ref_div = ref_div # integer, referencia para desplazamientos divergentes (<1.0)
+        self.maxiter = maxiter  # integer, maximo numero de iteraciones no lineales
+        self.tol = tol # integer, tolerancia para converger
+        self.flag_primera_iteracion = True
+        self.flag_big = np.zeros(self.n, dtype=bool)
+        self.flag_div = np.zeros(self.n, dtype=bool)
+        self.it = 0
+        self.convergencia = False
+        self.maxiter_alcanzado = False
+
+
+    def iterar1(self):
+        # incremento el numero de iteraciones
+        self.it += 1
+        # calculo el incremento de x
+        dx = self.ecuacion(self.x) # solucion nueva
+        # calculo las magnitudes de las variaciones y en base a ellas 
+        # inicializo flags para evaluar inestabilidad
+        self.flag_big[:] = False
+        self.flag_div[:] = False
+        # inicializo array de magnitud de desplazamientos
+        dl = np.zeros(self.n, dtype=float)
+        for i in range(self.n):
+            # calculo magnitud de desplazamiento [i]
+            dl[i] = np.sqrt( np.dot(dx[i],dx[i]) )
+            # evaluo relacion entre desplazamiento actual y desplazamiento previo
+            if self.flag_primera_iteracion: 
+                # si es la primera iteracion no puedo evaluar relacion con desplazamiento anterior
+                self.flag_primera_iteracion = False 
+                rel_dl = 0.0
+            else:
+                rel_dl = dl[i]/self.dl1[i]
+            # evaluo si la solucion es estable o no
+            if dl[i]<self.ref_small: 
+                pass 
+            elif dl[i]>self.ref_big:
+                self.flag_big[i] = True 
+            elif rel_dl>self.ref_div:
+                self.flag_div[i] = True
+        # si el incremento fue estable, modifico los arrays 
+        inestable = np.any(self.flag_big) or np.any(self.flag_div)
+        if not inestable:
+            self.x = self.x + dx # incremento la solucion
+            self.dl1 = dl
+            # calculo errores 
+            self.err = dl
+            # evaluo convergencia 
+            if ( np.max(self.err) < self.tol):
+                self.convergencia = True 
+            # evaluo que no haya superado el maximo de iteraciones
+            if self.it >= self.maxiter:
+                self.maxiter_alcanzado = True
+        else:
+            # si es inestable no se modifica la solucion, hay que reintentar
+            self.it -= 1
+            self.ecuacion.solventar_inestabilidad(self.flag_big, self.flag_div)   
+  
+    def iterar(self):
+        while True:
+            self.iterar1()
+            if self.convergencia or self.maxiter_alcanzado:
+                break
+
 
 class Malla(object):
-    def __init__(self, nodos, con):
+    def __init__(self, nodos, con, ec_con):
         self.nodos = nodos 
         self.con = con
+        self.ec_con = ec_con
         self.conT = con.get_traspuesta() 
-        # calculo las longitudes iniciales de las subfibras
-        self.dl0 = []
-        for jsf in range(con.n0):
-            nod_ini, nod_fin = con.get_con_elem0(jsf)
+        self.dl0 = [] 
+        self.calcular_dl0()
+        self.a = np.zeros( (self.num_sfs, 2), dtype=float )
+        self.t = np.zeros( self.num_sfs, dtype=float )
+
+    def calcular_dl0(self):
+        """ calcular las longitudes iniciales de todas las subfibras """
+        for jsf in range(self.num_sfs):
+            nod_ini, nod_fin = self.con.get_con_elem0(jsf)
             x0_ini = self.nodos.x0[nod_ini]
             x0_fin = self.nodos.x0[nod_fin]
             dr0 = x0_fin - x0_ini 
             dl0 = np.sqrt( np.dot(dr0,dr0) )
             self.dl0.append(dl0)
         self.dl0 = np.array(self.dl0, dtype=float)
+
+    @property 
+    def num_sfs(self):
+        """ getter: numero de subfibras """
+        return self.con.n0
+
+    def get_x(self):
+        return self.nodos.x
+
+    def set_x(self, x):
+        self.nodos.x = x
+
+    def ec_constitutiva(self, k, lam):
+        return k*(lam-1.0)
+
+    def calcular_tensiones(self):
+        """ calcula las tensiones de las subfibras en base a 
+        las coordenadas de los nodos y la conectividad """
+        for jsf in range(self.num_sfs):
+            nod_ini, nod_fin = self.con.get_con_elem0(jsf)
+            x_ini = self.nodos.x[nod_ini]
+            x_fin = self.nodos.x[nod_fin]
+            dr = x_fin - x_ini 
+            dl = np.sqrt(np.dot(dr,dr))
+            lam = dl / self.dl0[jsf]
+            self.a[jsf] = dr/dl
+            self.t[jsf] = self.ec_con(lam, [0.1])
+    
+    def mover_nodos_frontera(self, F):
+        xf0 = self.nodos.get_nodos_fr()
+        xf = np.matmul( xf0, np.transpose(F) )
+        self.nodos.x[self.nodos.mask_fr] = xf
+
+    def mover_nodos(self):
+        """ mueve los nodos segun la tension resultante
+        sobre cada nodo y aplicando una pseudoviscosidad
+        los nodos frontera van con deformacion afin 
+        esto representa una sola iteracion """ 
+        TenRes = np.zeros(2, dtype=float)
+        dx = np.zeros((self.nodos.num,2), dtype=float)
+        for n in range(self.nodos.num):
+            if self.nodos.tipos[n] == 1:
+                # nodo frontera
+                dx[n] = 0.0
+            else: 
+                # nodo interseccion
+                # tengo que obtener cuales son las subfibras correspondientes
+                # eso lo hago con la conectividad traspuesta
+                sfs = self.conT.get_con_elem0[n]
+                # la tension resultante es la suma
+                TenRes = np.sum( self.t[sfs] , 0 )
+                
+                    

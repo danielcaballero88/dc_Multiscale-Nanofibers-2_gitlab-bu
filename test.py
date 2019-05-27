@@ -1,23 +1,23 @@
 from Malla import Nodos, Conectividad, Malla
 
 nod_coors = [
-    [0.0, 0.0],
-    [0.0, 1.0],
-    [1.0, 1.0],
-    [0.0, 1.0],
-    [0.5, 0.5]
+    [0, 0],
+    [0, 2],
+    [2, 2],
+    [0, 2],
+    [1, 1]
 ]
 
 nod_tipos = [1,1,1,1,2]
 
 n = Nodos(nod_coors,nod_tipos) 
 
-print "num nodos: ", n.num_nod 
+print "num nodos: ", n.num
 print "tipo nodos: ", n.tipos 
 print "coordenadas: ", n.x
 print "mask fronteras: ", n.mask_fr 
 print "mask intersecciones: ", n.mask_in 
-print "num fron y num in: ", n.num_nod_fr, n.num_nod_in
+print "num fron y num in: ", n.num_fr, n.num_in
 print "---"
 
 conec = [
@@ -41,5 +41,13 @@ print "ieT: ", ctr.ie
 print "jeT: ", ctr.je
 print "---"
 
-m = Malla(n,c)
+def EcCon_lineal(lam, param):
+    k = param[0]
+    return k*(lam-1.0)
+
+m = Malla(n,c, EcCon_lineal)
 print m.dl0
+
+m.calcular_tensiones()
+print m.a 
+print m.t
