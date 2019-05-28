@@ -86,8 +86,8 @@ class Conectividad(object):
         cada elem0 se compone de los indices de los nodos a los que esta conectado (elems1) 
         no es necesario que figuren todos los elems1, pero si es recomdendable
         """
-        self.n0 = len(conec_in)
-        self.ne = np.zeros(self.n0, dtype=int) # numero de elem1 por cada elem0
+        self.num = len(conec_in) # numero de elementos en conec_in
+        self.ne = np.zeros(self.num, dtype=int) # numero de elem1 por cada elem0
         self.je = [] # aca pongo la conectividad en un array chorizo
         self.len_je = 0
         for i0, elem0 in enumerate(conec_in):
@@ -98,9 +98,9 @@ class Conectividad(object):
         # convierte el self.je a numpy array
         self.je = np.array(self.je, dtype=int)
         # ahora ensamblo el self.ie a partir del self.ne 
-        self.ie = np.zeros(self.n0+1, dtype=int)
-        self.ie[self.n0] = self.len_je # ultimo indice (len=self.n0+1, pero como es base-0, el ultimo tiene indice self.n0) 
-        for i0 in range(self.n0-1, -1, -1): # recorro desde el ultimo elemento (indice n0-1) hasta el primer elemento (indice 0)
+        self.ie = np.zeros(self.num+1, dtype=int)
+        self.ie[self.num] = self.len_je # ultimo indice (len=self.num+1, pero como es base-0, el ultimo tiene indice self.num) 
+        for i0 in range(self.num-1, -1, -1): # recorro desde el ultimo elemento (indice num-1) hasta el primer elemento (indice 0)
             self.ie[i0] = self.ie[i0+1] - self.ne[i0]
 
     def get_con_elem0(self, elem0):
@@ -124,12 +124,12 @@ class Conectividad(object):
         # supongo que el nodo de mayor indice en je es el maximo nodo que hay 
         n1 = np.max(self.je) + 1 # el +1 es por la base-0 de python
         # ahora para cada elem1, recorro los elem0 para ver las conexiones
-        # notar que supondre que los elems0 son range(self.n0) y los elems1 son range(n1)
+        # notar que supondre que los elems0 son range(self.num) y los elems1 son range(n1)
         jeT = [] 
         len_jeT = 0
         neT = np.zeros(n1, dtype=int)
         for i1 in range(n1): # aca supongo que los elems1 son range(n1), o sea una lista de indices
-            for i0 in range(self.n0): # idem para elems0, son una lista de indices
+            for i0 in range(self.num): # idem para elems0, son una lista de indices
                 elem0 = self.get_con_elem0(i0)
                 if i1 in elem0:
                     jeT.append(i0)
@@ -158,7 +158,7 @@ class Conectividad(object):
         cotr = Conectividad([])
         # calculo los arrays de la conectividad traspuesta 
         n1, len_jeT, neT, ieT, jeT = self.calcular_traspuesta() 
-        cotr.n0 = n1 
+        cotr.num = n1 
         cotr.len_je = len_jeT 
         cotr.ne = neT 
         cotr.ie = ieT 
@@ -172,6 +172,38 @@ class Conectividad(object):
     #     y sus conectados elems1 son indices tambien 
     #     """
     #     return self.jeT[self.ieT[elem1] : self.ieT[elem1+1]]
+
+class Subfibras(Conectividad):
+    """ es una conectividad particular """ 
+    def __init__(self, conec_in, coors0, paramcon):
+        Conectividad.__init__(self, conec_in) # esto hace que Subfibras sea igual que Conectividad al comienzo 
+        self.dl0 = np.zeros(self.num, dtype=float) # longitudes iniciales de las fibras
+        self.calcular_dl0(coors0)
+        self.paramcon = paramcon # parametros constitutivos
+
+    def get_con_sf(self, j):
+        """ obtener la conectividad de una subfibra (copia de get_con_elem0)"""
+        return self.je[ self.ie[j] : self.ie[j+1] ]
+
+    def calcular_dl0(self, xnods0):
+        """ calcular las longitudes iniciales de todas las subfibras """
+        self.dl0 = self.calcular_dl(xnods0, self.dl0)
+
+    def calcular_dl(self, xnods, dl=None):
+        """ calcular las longitudes de las fibras """ 
+        if dl == None:
+            dl = np.zeros(self.num, dtype=float) # seria mejor tenerlo preadjudicado
+        for jsf in range(self.num):
+            nod_ini, nod_fin = self.get_con_sf(jsf)
+            x_ini = xnods[nod_ini]
+            x_fin = xnods[nod_fin]
+            dr = x_fin - x_ini 
+            dl[jsf] = np.sqrt( np.dot(dr,dr) )
+        return dl
+
+    def tension_subfibra(self, lam):
+        k = self.paramcon[0] 
+        return k*(lam-1.0)
 
 class Iterador(object):
     def __init__(self, n, x, ecuacion, ref_small, ref_big, ref_div, maxiter, tol):
@@ -242,80 +274,85 @@ class Iterador(object):
         while True:
             self.iterar1()
             if self.convergencia or self.maxiter_alcanzado:
-                break
+                return self.x
 
 
 class Malla(object):
-    def __init__(self, nodos, con, ec_con):
+    def __init__(self, nodos, subfibras, psv):
         self.nodos = nodos 
-        self.con = con
-        self.ec_con = ec_con
-        self.conT = con.get_traspuesta() 
-        self.dl0 = [] 
-        self.calcular_dl0()
-        self.a = np.zeros( (self.num_sfs, 2), dtype=float )
-        self.t = np.zeros( self.num_sfs, dtype=float )
-
-    def calcular_dl0(self):
-        """ calcular las longitudes iniciales de todas las subfibras """
-        for jsf in range(self.num_sfs):
-            nod_ini, nod_fin = self.con.get_con_elem0(jsf)
-            x0_ini = self.nodos.x0[nod_ini]
-            x0_fin = self.nodos.x0[nod_fin]
-            dr0 = x0_fin - x0_ini 
-            dl0 = np.sqrt( np.dot(dr0,dr0) )
-            self.dl0.append(dl0)
-        self.dl0 = np.array(self.dl0, dtype=float)
-
-    @property 
-    def num_sfs(self):
-        """ getter: numero de subfibras """
-        return self.con.n0
-
+        self.sfs = subfibras
+        # para resolver el sistema uso pseudoviscosidad
+        self.psv = psv * np.ones(self.nodos.num, dtype=float)
+        
     def get_x(self):
         return self.nodos.x
 
     def set_x(self, x):
         self.nodos.x = x
 
-    def ec_constitutiva(self, k, lam):
-        return k*(lam-1.0)
-
-    def calcular_tensiones(self):
+    def calcular_tracciones_de_subfibras(self):
         """ calcula las tensiones de las subfibras en base a 
         las coordenadas de los nodos y la conectividad """
-        for jsf in range(self.num_sfs):
-            nod_ini, nod_fin = self.con.get_con_elem0(jsf)
+        tracciones = np.zeros( self.sfs.num, dtype=float )
+        for jsf in range(self.sfs.num):
+            nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
             x_ini = self.nodos.x[nod_ini]
             x_fin = self.nodos.x[nod_fin]
             dr = x_fin - x_ini 
             dl = np.sqrt(np.dot(dr,dr))
-            lam = dl / self.dl0[jsf]
-            self.a[jsf] = dr/dl
-            self.t[jsf] = self.ec_con(lam, [0.1])
-    
+            lam = dl / self.sfs.dl0[jsf]
+            a = dr/dl
+            t = self.sfs.tension_subfibra(lam, [0.1])
+            tracciones[jsf] = t*a
+        return tracciones
+
+    def calcular_tracciones_sobre_nodos(self, tracciones_subfibras):
+        """ calcula las tensiones resultantes sobre los nodos
+        recorriendo las subfibras y para cada subfibra sumando
+        la traccion correspondiente a sus nodos, con el signo
+        segun si es el nodo inicial o el nodo final """ 
+        TraRes = np.zeros( (self.nodos.num,2), dtype=float)
+        # dx = np.zeros((self.nodos.num,2), dtype=float)
+        # recorro las fibras para saber las tensiones sobre los nodos
+        for jsf in range(self.sfs.num):
+            # tengo que sumar la tension de la fibra a los nodos
+            traccion_j = tracciones_subfibras[jsf]
+            # sobre el primer nodo va asi y sobre el segundo en sentido contrario
+            nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
+            TraRes[nod_ini] += traccion_j 
+            TraRes[nod_fin] -= traccion_j
+
     def mover_nodos_frontera(self, F):
+        """ mueve los nodos de la frontera de manera afin segun el 
+        gradiente de deformaciones (tensor F de 2x2) """
         xf0 = self.nodos.get_nodos_fr()
         xf = np.matmul( xf0, np.transpose(F) )
         self.nodos.x[self.nodos.mask_fr] = xf
 
-    def mover_nodos(self):
+    def mover_nodos(self, tracciones_nodos):
         """ mueve los nodos segun la tension resultante
         sobre cada nodo y aplicando una pseudoviscosidad
         los nodos frontera van con deformacion afin 
-        esto representa una sola iteracion """ 
-        TenRes = np.zeros(2, dtype=float)
+        esto representa una sola iteracion 
+        (calculo de dx segun x: dx=f(x) ) """ 
         dx = np.zeros((self.nodos.num,2), dtype=float)
         for n in range(self.nodos.num):
-            if self.nodos.tipos[n] == 1:
-                # nodo frontera
-                dx[n] = 0.0
-            else: 
-                # nodo interseccion
-                # tengo que obtener cuales son las subfibras correspondientes
-                # eso lo hago con la conectividad traspuesta
-                sfs = self.conT.get_con_elem0[n]
-                # la tension resultante es la suma
-                TenRes = np.sum( self.t[sfs] , 0 )
-                
-                    
+            dx[n] = tracciones_nodos[n] / self.psv[n]
+        return dx 
+
+    def __call__(self):
+        """ metodo para sobrecargar los parentersis () 
+        la idea es que este metodo sea la funcion dx=f(x) """ 
+        # primero calculo segun las coordenadas, las tracciones de las subfibras
+        trac_sfs = self.calcular_tracciones_de_subfibras() 
+        trac_nod = self.calcular_tracciones_sobre_nodos(trac_sfs) 
+        dx = self.mover_nodos(trac_nod) 
+        return dx
+
+    def solventar_inestabilidad(self, flag_big_dx, flag_div_dx):
+        """ es necesario tener esta subrutina para solventar situaciones
+        en que, durante las iteraciones, haya desplazamiento exagerados
+        o desplazamientos crecientes en iteraciones, en ese caso lo que
+        se hace es aumentar la pseudoviscosidad del nodo en cuestion """ 
+        nodos_criticos = flag_big_dx + flag_div_dx
+        self.psv[nodos_criticos] = 1.5*self.psv[nodos_criticos]
