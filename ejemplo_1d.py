@@ -53,7 +53,7 @@ m.mover_nodos_frontera(F)
 ref_pequeno = 0.1
 ref_grande = 5.0
 ref_diverge = 0.9
-max_iter = 10
+max_iter = 100
 tolerancia = 0.00001
 i = Iterador(len(nod_coors), m.nodos.x, m, ref_pequeno, ref_grande, ref_diverge, max_iter, tolerancia)
 

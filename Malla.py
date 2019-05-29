@@ -202,8 +202,11 @@ class Subfibras(Conectividad):
         return dl
 
     def tension_subfibra(self, j, lam):
-        k = self.paramcon[j,0] 
-        return k*(lam-1.0)
+        k = self.paramcon[j,0]
+        if lam>=1.0:
+            return k*(lam-1.0)
+        else:
+            return 0.1*k*(lam-1.0)
 
 class Iterador(object):
     def __init__(self, n, x, sistema, ref_small, ref_big, ref_div, maxiter, tol):
