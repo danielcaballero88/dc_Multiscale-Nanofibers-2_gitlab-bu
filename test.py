@@ -1,8 +1,9 @@
-from Malla import Nodos, Conectividad, Malla
+from Malla import Nodos, Subfibras, Malla, Iterador
+import numpy as np
 
 nod_coors = [
     [0, 0],
-    [0, 2],
+    [2, 0],
     [2, 2],
     [0, 2],
     [1, 1]
@@ -22,32 +23,42 @@ print "---"
 
 conec = [
     [0,4],
-    [4,1],
-    [2,4],
-    [4,3]
+    [4,2],
+    [3,4],
+    [4,1]
 ]
 
-c = Conectividad(conec) # conec indica los nodos de cada subfibra
+s = Subfibras(conec, n.x0, [0.1])
 
-print "ne: ", c.ne 
-print "ie. ", c.ie 
-print "je: ", c.je 
+print "ne: ", s.ne 
+print "ie. ", s.ie 
+print "je: ", s.je 
 print "---"
 
-ctr = c.get_traspuesta() # la traspuesta indica las subfibras de cada nodo
 
-print "neT: ", ctr.ne 
-print "ieT: ", ctr.ie 
-print "jeT: ", ctr.je
+m = Malla(n, s, 0.1)
+
+F = np.array(
+    [
+        [1.1, 0.0],
+        [0.0, 1.0]
+    ],
+    dtype=float
+)
+
+m.mover_nodos_frontera(F) 
+
+i = Iterador(len(nod_coors), m.nodos.x, m, 0.0001, 0.5, 0.9, 100, 1.0e-6)
+
+i.iterar() 
+
+ts = m.calcular_tracciones_de_subfibras()
+print m.calcular_tracciones_sobre_nodos(ts)
+print m.calcular_incremento()
+
 print "---"
+m.set_x(i.x)
 
-def EcCon_lineal(lam, param):
-    k = param[0]
-    return k*(lam-1.0)
-
-m = Malla(n,c, EcCon_lineal)
-print m.dl0
-
-m.calcular_tensiones()
-print m.a 
-print m.t
+ts = m.calcular_tracciones_de_subfibras()
+print m.calcular_tracciones_sobre_nodos(ts)
+print m.calcular_incremento()

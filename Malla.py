@@ -191,7 +191,7 @@ class Subfibras(Conectividad):
 
     def calcular_dl(self, xnods, dl=None):
         """ calcular las longitudes de las fibras """ 
-        if dl == None:
+        if dl is None:
             dl = np.zeros(self.num, dtype=float) # seria mejor tenerlo preadjudicado
         for jsf in range(self.num):
             nod_ini, nod_fin = self.get_con_sf(jsf)
@@ -206,11 +206,11 @@ class Subfibras(Conectividad):
         return k*(lam-1.0)
 
 class Iterador(object):
-    def __init__(self, n, x, ecuacion, ref_small, ref_big, ref_div, maxiter, tol):
+    def __init__(self, n, x, sistema, ref_small, ref_big, ref_div, maxiter, tol):
         self.n = n # tamano de la solcion (len(x))
-        self.x = x # solucion actualizada o iterada
+        self.x = x # solucion (comienza como semilla, luego es la iterada o actualizada)
         self.dl1 = np.zeros(self.n, dtype=float) # necesario para evaluar convergencia
-        self.ecuacion = ecuacion # ecuacion iterable a resolver (dx = x-x1 = f(x1))
+        self.sistema = sistema # ecuacion iterable a resolver (dx = x-x1 = f(x1))
         self.ref_small = ref_small # integer, referencia para desplazamientos pequenos
         self.ref_big = ref_big # integer, referencia para desplazamientos grandes
         self.ref_div = ref_div # integer, referencia para desplazamientos divergentes (<1.0)
@@ -228,7 +228,7 @@ class Iterador(object):
         # incremento el numero de iteraciones
         self.it += 1
         # calculo el incremento de x
-        dx = self.ecuacion(self.x) # solucion nueva
+        dx = self.sistema.calcular_incremento() # solucion nueva
         # calculo las magnitudes de las variaciones y en base a ellas 
         # inicializo flags para evaluar inestabilidad
         self.flag_big[:] = False
@@ -240,21 +240,28 @@ class Iterador(object):
             dl[i] = np.sqrt( np.dot(dx[i],dx[i]) )
             # evaluo relacion entre desplazamiento actual y desplazamiento previo
             if self.flag_primera_iteracion: 
-                # si es la primera iteracion no puedo evaluar relacion con desplazamiento anterior
-                self.flag_primera_iteracion = False 
-                rel_dl = 0.0
+                # si es la primera iteracion no puedo evaluar relacion con desplazamiento anterior 
+                rel_dl = self.ref_div
+                if i==self.n-1:
+                    # cuando estoy en el ultimo nodo de la primera iteracion
+                    # desmarco el flag de primera iteracion
+                    self.flag_primera_iteracion = False
             else:
                 rel_dl = dl[i]/self.dl1[i]
             # evaluo si la solucion es estable o no
+            # si el desplazamiento es pequeno lo dejo pasar
             if dl[i]<self.ref_small: 
                 pass 
+            # si es muy grande lo marco como inestable
             elif dl[i]>self.ref_big:
-                self.flag_big[i] = True 
+                self.flag_big[i] = True
+            # al igual que si es divergente
             elif rel_dl>self.ref_div:
                 self.flag_div[i] = True
         # si el incremento fue estable, modifico los arrays 
         inestable = np.any(self.flag_big) or np.any(self.flag_div)
         if not inestable:
+            print "estable: ", dx[4], self.x[4], self.x[4]+dx[4]
             self.x = self.x + dx # incremento la solucion
             self.dl1 = dl
             # calculo errores 
@@ -267,8 +274,9 @@ class Iterador(object):
                 self.maxiter_alcanzado = True
         else:
             # si es inestable no se modifica la solucion, hay que reintentar
+            print "inestable: ", dl[4], self.dl1[4]
             self.it -= 1
-            self.ecuacion.solventar_inestabilidad(self.flag_big, self.flag_div)   
+            self.sistema.solventar_inestabilidad(self.flag_big, self.flag_div)   
   
     def iterar(self):
         while True:
@@ -293,7 +301,7 @@ class Malla(object):
     def calcular_tracciones_de_subfibras(self):
         """ calcula las tensiones de las subfibras en base a 
         las coordenadas de los nodos y la conectividad """
-        tracciones = np.zeros( self.sfs.num, dtype=float )
+        tracciones = np.zeros( (self.sfs.num,2), dtype=float )
         for jsf in range(self.sfs.num):
             nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
             x_ini = self.nodos.x[nod_ini]
@@ -302,7 +310,7 @@ class Malla(object):
             dl = np.sqrt(np.dot(dr,dr))
             lam = dl / self.sfs.dl0[jsf]
             a = dr/dl
-            t = self.sfs.tension_subfibra(lam, [0.1])
+            t = self.sfs.tension_subfibra(lam)
             tracciones[jsf] = t*a
         return tracciones
 
@@ -321,6 +329,7 @@ class Malla(object):
             nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
             TraRes[nod_ini] += traccion_j 
             TraRes[nod_fin] -= traccion_j
+        return TraRes
 
     def mover_nodos_frontera(self, F):
         """ mueve los nodos de la frontera de manera afin segun el 
@@ -328,6 +337,12 @@ class Malla(object):
         xf0 = self.nodos.get_nodos_fr()
         xf = np.matmul( xf0, np.transpose(F) )
         self.nodos.x[self.nodos.mask_fr] = xf
+
+    def deformar_afin(self, F):
+        """ mueve todos los nodos de manera afin segun el F """
+        x0 = self.nodos.x0 
+        x = np.matmul( x0, np.transpose(F)) 
+        self.nodos.x = x
 
     def mover_nodos(self, tracciones_nodos):
         """ mueve los nodos segun la tension resultante
@@ -337,10 +352,13 @@ class Malla(object):
         (calculo de dx segun x: dx=f(x) ) """ 
         dx = np.zeros((self.nodos.num,2), dtype=float)
         for n in range(self.nodos.num):
-            dx[n] = tracciones_nodos[n] / self.psv[n]
+            if self.nodos.mask_fr[n]:
+                dx[n] = 0.0 # nodo de dirichlet
+            else:
+                dx[n] = tracciones_nodos[n] / self.psv[n]
         return dx 
 
-    def __call__(self):
+    def calcular_incremento(self):
         """ metodo para sobrecargar los parentersis () 
         la idea es que este metodo sea la funcion dx=f(x) """ 
         # primero calculo segun las coordenadas, las tracciones de las subfibras
@@ -355,4 +373,4 @@ class Malla(object):
         o desplazamientos crecientes en iteraciones, en ese caso lo que
         se hace es aumentar la pseudoviscosidad del nodo en cuestion """ 
         nodos_criticos = flag_big_dx + flag_div_dx
-        self.psv[nodos_criticos] = 1.5*self.psv[nodos_criticos]
+        self.psv[nodos_criticos] = 2.0*self.psv[nodos_criticos]
