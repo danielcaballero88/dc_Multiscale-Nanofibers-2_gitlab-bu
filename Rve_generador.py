@@ -550,11 +550,21 @@ class Layer(object):
         plt.show()
 
     def get_simplified_connectivity(self):
+        """ devuelve la conectividad de la siguiente manera
+        numero de nodos
+        numero de nodos frontera
+        numero de nodos interseccion
+        coordenadas (lista de listas)
+        numero de subfibras
+        conectividad (subfibras, lista de listas)
+        """
         # calculo el numero efectivo de nodos (fronteras e intersecciones)
         num_nodos = 0 
+        num_nodos_fr = 0
         for n in self.nodos:
             if n.get_if_frontera():
                 num_nodos += 1 
+                num_nodos_fr += 1
         num_nodos_in = len(self.nodos_in)
         num_nodos += num_nodos_in
         # armo el array de coordenadas de nodos
@@ -608,15 +618,16 @@ class Layer(object):
                 n1_id = conec_fibras[j_f, j_n_f+1]
                 conec_sf[j_sf,:] = [n0_id, n1_id]
                 j_sf += 1
-        # print to debug 
-        for j_n in range(num_nodos):
-            print coordenadas[j_n,:]
-        for j_f in range(num_fibras):
-            print conec_fibras[j_f,:]
-        for j_sf in range(num_sf):
-            print conec_sf[j_sf,:]
-        for j_f in range(num_fibras):
-            print conec_f_sf[j_f,:]
+        # # print to debug 
+        # for j_n in range(num_nodos):
+        #     print coordenadas[j_n,:]
+        # for j_f in range(num_fibras):
+        #     print conec_fibras[j_f,:]
+        # for j_sf in range(num_sf):
+        #     print conec_sf[j_sf,:]
+        # for j_f in range(num_fibras):
+        #     print conec_f_sf[j_f,:]
+        return num_nodos, num_nodos_fr, num_nodos_in, coordenadas, num_sf, conec_sf
 
 
 
@@ -629,13 +640,13 @@ class Rve(object):
 
 
 
-# rve instance
-layer1 = Layer(L=1.0, dl=0.1, dtheta=np.pi*0.1)
+# # rve instance
+# layer1 = Layer(L=1.0, dl=0.1, dtheta=np.pi*0.1)
 
-for i in range(5):
-    layer1.make_fibra()
-layer1.calcular_interecciones()
+# for i in range(5):
+#     layer1.make_fibra()
+# layer1.calcular_interecciones()
 
-layer1.get_simplified_connectivity()
+# layer1.get_simplified_connectivity()
 
-layer1.graficar()
+# layer1.graficar()

@@ -6,7 +6,7 @@ Coordenadas y conectividad
 import numpy as np 
 
 class Nodos(object):
-    def __init__(self, coors=[], tipos=[]):
+    def __init__(self):
         """
         x es una lista de python (num_nodos, 2) y aca lo convierto en array de numpy
         primero vienen los nodos de frontera 
@@ -21,24 +21,24 @@ class Nodos(object):
         self.tipos = [] 
         self.mask_fr = [] 
         self.mask_in = []
+
+
+    @classmethod 
+    def from_coordenadas(cls, coors, tipos):
+        instance = cls()
         for coor, tipo in zip(coors,tipos):
-            self.num += 1 
-            self.x0.append(coor) 
-            self.x.append(coor) 
+            instance.num += 1 
+            instance.x0.append(coor) 
+            instance.x.append(coor) 
             if tipo == 1:
-                self.num_fr += 1 
-                self.tipos.append(1)
+                instance.num_fr += 1 
+                instance.tipos.append(1)
             elif tipo == 2:
-                self.num_in += 1 
-                self.tipos.append(2)
+                instance.num_in += 1 
+                instance.tipos.append(2)
             else: 
                 raise ValueError("tipo solo puede ser 1 (frontera) o 2 (interseccion)")
-        self.cerrar()
-
-    @classmethod
-    def vacio(cls):
-        instance = Nodos()
-        instance.abrir() 
+        instance.cerrar()
         return instance
 
     def get_nodos_fr(self):
@@ -84,39 +84,88 @@ class Nodos(object):
         self.open = False
 
 class Conectividad(object):
-    def __init__(self, conec_in=[]):
-        """
-        conectividad conecta dos listas (o arrays) de objetos: elems0 con elems1
-        es para conectar nodos con subfibras por lo pronto:
-        cada item de conec_in es un elem0
-        elems0 son indices de subfibras y estan todos del 0 al n0-1
-        cada elem0 se compone de los indices de los nodos a los que esta conectado (elems1) 
-        no es necesario que figuren todos los elems1, pero si es recomdendable
-        """
-        self.num = len(conec_in) # numero de elementos en conec_in
-        self.ne = np.zeros(self.num, dtype=int) # numero de elem1 por cada elem0
+    """
+    conectividad conecta dos listas (o arrays) de objetos: elems0 con elems1
+    es para conectar nodos con subfibras por lo pronto:
+    cada item de conec_in es un elem0
+    elems0 son indices de subfibras y estan todos del 0 al n0-1
+    cada elem0 se compone de los indices de los nodos a los que esta conectado (elems1) 
+    no es necesario que figuren todos los elems1, pero si es recomdendable
+    """
+    def __init__(self):
+        self.open = True 
+        self.num = 0 # cantidad de elem0
+        self.len_je = 0 # cantidad de elem1 repetidos en la conectividad (si aparecen mas de una vez se cuentan todas)
+        self.ne = [] 
+        self.je = [] 
+        self.ie = [] 
+
+    @classmethod 
+    def from_listoflists(cls, conec):
+        instance = cls()
+        instance.add_conec_listoflists(conec)
+        instance.cerrar()  # se calcula num, len_je, y el array ie
+        return instance
+
+    def cerrar(self):
+        """ se cierra la conectividad
+        mejora el uso
+        mas dificil agregar elementos 
+        se pasan los arrays a numpy por eficiencia
+        se calcula el ie = array que apunta a donde comienza cada elem0 en el je """
+        assert self.open == True
+        # convierto a numpy
+        self.ne = np.array(self.ne, dtype=int) 
+        self.je = np.array(self.je, dtype=int) 
+        # calculo el ie (apunta a donde comienza cada elem0 en je)
+        self.ie = np.zeros(self.num+1, dtype=int) # necesito tener num+1 porque el ultimo elem0 termina donde comenzaria un elem0 extra inexistente en num+1
+        self.ie[self.num] = self.len_je # ultimo indice (len=instance.num+1, pero como es base-0, el ultimo tiene indice instance.num)
+        for i0 in range(self.num-1, -1, -1): # recorro desde el ultimo elem0 (indice num-1) hasta el primer elem0 (indice 0)
+            self.ie[i0] = self.ie[i0+1] - self.ne[i0] # para saber donde empieza cada elem0 voy restando el numero de elem1 de cada uno
+        self.open = False
+
+    def abrir(self):
+        """ se abre la conectividad
+        para agregar nuevos elementos
+        imposibilita operar con ella """
+        assert self.open == False 
+        self.ne = [n for n in self.ne]
+        self.je = [e1 for e1 in self.je] 
+        self.ie = [] 
+        self.open = True
+
+    def add_conec_listoflists(self, conec):
+        """ agrega la conectividad dada en una lista de listas
+        a los arrays ne y je
+        ademas calcula num y len_je """
+        self.num = len(conec) # numero de elementos en conec
+        self.ne = [] # numero de elem1 por cada elem0]
         self.je = [] # aca pongo la conectividad en un array chorizo
         self.len_je = 0
-        for i0, elem0 in enumerate(conec_in):
+        for elem0 in conec:
+            num_elem1 = 0 # numero de elem1 en elem0
             for item1 in elem0:
-                self.ne[i0] += 1 # sumo un elem1 conectado a elem0
+                num_elem1 += 1 # sumo un elem1 conectado a elem0
                 self.je.append(item1) # lo agrego a la conectividad
                 self.len_je += 1
-        # convierte el self.je a numpy array
-        self.je = np.array(self.je, dtype=int)
-        # ahora ensamblo el self.ie a partir del self.ne 
-        self.ie = np.zeros(self.num+1, dtype=int)
-        self.ie[self.num] = self.len_je # ultimo indice (len=self.num+1, pero como es base-0, el ultimo tiene indice self.num) 
-        for i0 in range(self.num-1, -1, -1): # recorro desde el ultimo elemento (indice num-1) hasta el primer elemento (indice 0)
-            self.ie[i0] = self.ie[i0+1] - self.ne[i0]
+            self.ne.append(num_elem1) # agrego el numero de elem1 de elem0 a la lista
 
-    def get_con_elem0(self, elem0):
+    def add_elem0(self, con_elem0):
+        assert self.open==True
+        num_elem1 = 0 
+        for elem1 in con_elem0:
+            num_elem1 += 1
+            self.je.append(elem1)
+            self.len_je += 1
+        self.ne.append(num_elem1)
+
+    def get_con_elem0(self, j0):
         """ 
-        devuelve los elementos conectados al elemento "elem0"
-        por lo pronto elem0 es un indice (los elems0 son indices de subfibras) 
-        y sus conectados elems1 son indices tambien 
+        devuelve los elem1 conectados al elem0 "j0"
+        j0 es el indice de elem0 (que por ahora son indices asi que se corresponde con el)
+        y sus conectados elem1 son indices tambien 
         """
-        return self.je[self.ie[elem0] : self.ie[elem0+1]]
+        return self.je[ self.ie[j0] : self.ie[j0+1] ]
 
     def calcular_traspuesta(self):
         """ 
@@ -162,7 +211,7 @@ class Conectividad(object):
         OJO, necesito calcular las orientaciones de las subfibras respecto de los nodos
         """
         # creo una conectividad vacia 
-        cotr = Conectividad([])
+        cotr = Conectividad()
         # calculo los arrays de la conectividad traspuesta 
         n1, len_jeT, neT, ieT, jeT = self.calcular_traspuesta() 
         cotr.num = n1 
@@ -172,48 +221,67 @@ class Conectividad(object):
         cotr.je = jeT 
         return cotr
 
-    # def get_con_elem1(self, elem1):
-    #     """ 
-    #     devuelve los elementos conectados al elemento "elem1"
-    #     por lo pronto elem1 es un indice (los elems1 son indices de subfibras) 
-    #     y sus conectados elems1 son indices tambien 
-    #     """
-    #     return self.jeT[self.ieT[elem1] : self.ieT[elem1+1]]
 
 class Subfibras(Conectividad):
-    """ es una conectividad particular """ 
-    def __init__(self, conec_in, coors0, paramcon):
-        Conectividad.__init__(self, conec_in) # esto hace que Subfibras sea igual que Conectividad al comienzo 
-        self.dl0 = np.zeros(self.num, dtype=float) # longitudes iniciales de las fibras
-        self.calcular_dl0(coors0)
-        self.paramcon = np.array(paramcon, dtype=float) # parametros constitutivos (array de (num_sfs, num_param))
+    """ es una conectividad
+    con algunos atributos y metodos particulares """ 
+
+    def __init__(self):
+        Conectividad.__init__()
+        self.longs0 = np.zeros(self.num, dtype=float) # longitudes iniciales de las fibras
+        self.ecuacion_constitutiva = None 
+        self.param_con = None # va a tener que ser un array de (num_subfibras, num_paramcon) presumiendo que cada subfibra pueda tener diferentes valores de parametros        
+
+    @classmethod 
+    def closed(cls, conec, coors0, param_con, ec_con):
+        instance = cls()
+        instance.add_conec_listoflists(conec)
+        instance.calcular_longs0(coors0) 
+        instance.param_con = param_con
+        instance.ecuacion_constitutiva = ec_con 
+        return instance
 
     def get_con_sf(self, j):
         """ obtener la conectividad de una subfibra (copia de get_con_elem0)"""
         return self.je[ self.ie[j] : self.ie[j+1] ]
 
-    def calcular_dl0(self, xnods0):
-        """ calcular las longitudes iniciales de todas las subfibras """
-        self.dl0 = self.calcular_dl(xnods0, self.dl0)
+    def calcular_long_j(self, xnods, j):
+        nod_ini, nod_fin = self.get_con_sf(j) 
+        x_ini = xnods[nod_ini] 
+        x_fin = xnods[nod_fin] 
+        dr = x_fin - x_ini 
+        long = np.sqrt ( np.dot(dr,dr) )
+        return long
 
-    def calcular_dl(self, xnods, dl=None):
+    def calcular_longs0(self, xnods0):
+        """ calcular las longitudes iniciales de todas las subfibras """
+        self.longs0 = self.calcular_longitudes(xnods0, self.longs0)
+
+    def calcular_longitudes(self, xnods, longs=None):
         """ calcular las longitudes de las fibras """ 
-        if dl is None:
-            dl = np.zeros(self.num, dtype=float) # seria mejor tenerlo preadjudicado
+        if longs is None:
+            longs = np.zeros(self.num, dtype=float) # seria mejor tenerlo preadjudicado
         for jsf in range(self.num):
             nod_ini, nod_fin = self.get_con_sf(jsf)
             x_ini = xnods[nod_ini]
             x_fin = xnods[nod_fin]
             dr = x_fin - x_ini 
-            dl[jsf] = np.sqrt( np.dot(dr,dr) )
-        return dl
+            longs[jsf] = np.sqrt( np.dot(dr,dr) )
+        return longs
 
-    def tension_subfibra(self, j, lam):
-        k = self.paramcon[j,0]
-        if lam>=1.0:
-            return k*(lam-1.0)
-        else:
-            return 0.1*k*(lam-1.0)
+    def calcular_tension_j(self, lam, j):
+        return self.ecuacion_constitutiva(lam, self.param_con[j])
+
+    def calcular_elongaciones(self, xnods):
+        longs = self.calcular_longitudes(xnods)
+        lams = longs/self.longs0 
+        return lams
+
+    def calcular_tensiones(self, xnods):
+        lams = self.calcular_elongaciones(xnods) 
+        tens = self.ecuacion_constitutiva(lams, self.param_con)
+        return tens
+
 
 class Iterador(object):
     def __init__(self, n, x, sistema, ref_small, ref_big, ref_div, maxiter, tol):
@@ -305,37 +373,26 @@ class Iterador(object):
 
 
 class Malla(object):
-    def __init__(self, nodos, subfibras, psv=None):
-        self.nodos = nodos 
-        self.sfs = subfibras
+    def __init__(self):
+        self.open = True
+        self.nodos = Nodos() 
+        self.sfs = Subfibras() # las subfibras las conecto con los nodos que las componen
+        self.psv = None 
+
+    @classmethod
+    def closed(cls, nodos, subfibras, psv):
+        instance = cls()
+        instance.nodos = nodos 
+        instance.sfs = subfibras
         # para resolver el sistema uso pseudoviscosidad
-        if psv is None:
-            self.psv = np.zeros( self.nodos.num, dtype=float)
-            self.calcular_pseudoviscosidades()
-        else:
-            self.psv = np.array(psv, dtype=float)
+        instance.psv = np.array(psv, dtype=float)
+        instance.open = False 
         
     def get_x(self):
         return self.nodos.x
 
     def set_x(self, x):
         self.nodos.x = x
-
-    def calcular_pseudoviscosidades(self):
-        """ recorro las subfibras y a cada nodo le sumo
-        pseudoviscosidad en funcion de las subfibras que
-        lo tocan en funcion de la rigidez de esa fibra """ 
-        # recorro las fibras para saber las tensiones sobre los nodos
-        self.psv[:] = 0.0
-        for jsf in range(self.sfs.num):
-            # tengo que sumar la tension de la fibra a los nodos
-            k_j = self.sfs.paramcon[jsf,0]
-            psv_j = 2.0 * np.sqrt( k_j )
-            # sobre el primer nodo va asi y sobre el segundo en sentido contrario
-            nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
-            self.psv[nod_ini] += psv_j 
-            self.psv[nod_fin] += psv_j
-        return self.psv
 
     def calcular_tracciones_de_subfibras(self, x1=None):
         """ calcula las tensiones de las subfibras en base a 
@@ -351,7 +408,7 @@ class Malla(object):
             x_fin = x1[nod_fin]
             dr = x_fin - x_ini 
             dl = np.sqrt(np.dot(dr,dr))
-            lam = dl / self.sfs.dl0[jsf]
+            lam = dl / self.sfs.longs0[jsf]
             a = dr/dl
             t = self.sfs.tension_subfibra(jsf, lam)
             tracciones[jsf] = t*a
