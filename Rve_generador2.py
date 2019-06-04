@@ -107,6 +107,13 @@ def calcular_interseccion(r00, r01, r10, r11):
     # usando un sistema de referencia intrinseco al segmento j0 (chi, eta)
     # calculo los angulos
     theta_rel = theta1 - theta0
+    while True: # ahora me fijo que quede en el rango [0 , 2pi)
+        if theta_rel>= 0. and theta_rel<2.*np.pi: 
+            break 
+        elif theta_rel>=2.*np.pi: 
+            theta_rel -= 2.*np.pi 
+        elif theta_rel<0.: 
+            theta_rel += 2.*np.pi 
     # me fijo que j1 no sea verticales en el sistema intrinseco a j0 (para no manejar pendientes infinitas luego)
     m_rel_inf = iguales(theta_rel, np.pi*0.5, np.pi*1.0e-8) or iguales(theta_rel, -np.pi*0.5, np.pi*1.0e-8)
 
@@ -158,13 +165,8 @@ def calcular_interseccion(r00, r01, r10, r11):
     y_in = y00 + chi_in*np.sin(theta0)
     r_in = [x_in, y_in]
     # ---
-    # chequeo posibilidad 2
-    if (chi_in>0.) and (chi_in<dl_0):
-        # la interseccion se da dentro del segmento
-        return r_in, 2, None, None
-    # ---
-    # en este momento es seguro que la interseccion coincide con al menos un extremo
-    # me fijo cuales
+    # posibilidades 3 y 4
+    # ahora me fijo si la interseccion coincide con algun extremo
     nin_s0 = None
     nin_s1 = None
     #
@@ -178,13 +180,22 @@ def calcular_interseccion(r00, r01, r10, r11):
     elif iguales(x_in,x11) and iguales(y_in,y11):
         nin_s1 = 1
     # ---
-    # posibilidad 4
-    if nin_s0 is None and nin_s1 is None:
+    # posibilidad 4 (extremo-extremo)
+    if nin_s0 is not None and nin_s1 is not None: # aqui ninguno es None
         return r_in, 4, nin_s0, nin_s1
     # ---
-    # posibilidad 3
-    if nin_s0 is None or nin_s1 is None:
-        return r_in, 3, nin_s0, nin_s1
+    # posibilidad 3 (extremo-medio)
+    if nin_s0 is None or nin_s1 is None: # al menos uno es None
+        if nin_s0 is not None or nin_s1 is not None: # al menos uno no es None
+            return r_in, 3, nin_s0, nin_s1 # por lo tanto tengo un extremo y uno no (uno es None y otro no lo es)
+    # si los dos son None entonces paso a la posibilidad 2
+    # ---
+    # chequeo posibilidad 2 
+    # en este punto ya se supone que la interseccion no ha sido ni fuera del intervalo, ni en un extremo
+    # igual chequeo por seguridad
+    if (chi_in>0.) and (chi_in<dl_0):
+        # la interseccion se da dentro del segmento
+        return r_in, 2, None, None
     # ---
     # si llegue hasta aca hay algun error
     raise ValueError("Hay algo que esta muy mal")
@@ -562,6 +573,7 @@ class Malla(object):
                 if in_tipo==2: # interseccion en el medio
                     try: # tengo que mover el ultimo nodo y por lo tanto cambia el segmento
                         self.segs.mover_nodo(s, 1, self.nods.r, in_r)
+                        rs1 = in_r
                     except ValueError as e:
                         print "error"
                         print fib_con, b, interseccion
@@ -746,5 +758,5 @@ class Malla(object):
         if not self.pregraficado:
             self.pre_graficar_nodos_frontera()
             self.pre_graficar_fibras()
-        self.ax.legend(loc="upper left", numpoints=1, prop={"size":10})
+        self.ax.legend(loc="upper left", numpoints=1, prop={"size":6})
         plt.show()
