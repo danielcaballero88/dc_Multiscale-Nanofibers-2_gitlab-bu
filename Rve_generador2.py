@@ -253,6 +253,15 @@ class Segmentos(object):
         coors[nglobal] = new_r # se lo modifica resida donde resida (normalmente en un objeto nodos)
         self.actualizar_segmento(j, coors)
 
+    def cambiar_conectividad(self, j, new_con, coors):
+        """ se modifica la conectividad de un segmento (j) de la lista
+        se le da la nueva conectividad new_con
+        y por lo tanto se vuelve a calcular su angulo y longitud
+        (util para dividir segmentos en 2) """ 
+        self.con[j] = new_con 
+        longitud, angulo = self.calcular_long_y_theta(new_con, coors)
+        self.thetas[j] = angulo
+        self.longs[j] = longitud
 
     @staticmethod
     def calcular_long_y_theta(seg, coors):
@@ -341,73 +350,6 @@ class Segmentos(object):
         y1 = coors[n1][1]
         return x1-x0, y1-y0, np.minimum(y0,y1), np.maximum(x0,x1), np.maximum(y0,y1), np.minimum(x0,x1)
 
-    def calcular_interseccion(self, j0, j1, coors):
-        """ chequear interseccion entre segmentos j0 y j1 """
-        # ---
-        # paralelismo
-        theta0 = self.thetas[j0]
-        theta1 = self.thetas[j1]
-        paralelos = iguales(theta0, theta1, np.pi*1.0e-8)
-        if paralelos:
-            return None # no hay chance de interseccion porque son paralelos los segmentos
-        # variables auxiliares
-        dx0, dy0, bot0, rig0, top0, lef0  = self.get_dx_dy_brtl(j0, coors)
-        dx1, dy1, bot1, rig1, top1, lef1  = self.get_dx_dy_brtl(j1, coors)
-        # ---
-        # lejania
-        maxBottom = np.maximum(bot0, bot1) # nodo de la derecha mas a la izquierda entre los dos segmentos
-        minRight = np.minimum(rig0, rig1) # nodo de la derecha mas a la izquierda entre los dos segmentos
-        minTop = np.minimum(top0, top1) # nodo de la derecha mas a la izquierda entre los dos segmentos
-        maxLeft = np.maximum(lef0, lef1) # nodo de la izquierda mas a la derecha entre los dos segmentos
-        # ahora chequeo
-        lejos = ( (maxLeft-minRight) > 1.0e-8 ) or ( (maxBottom-minTop) > 1.0e-8 )
-        if lejos:
-            return None # no hay chance de interseccion porque estan lejos los segmentos
-        # ---
-        # interseccion
-        # si no son paralelos y si tienen cercania entonces encuentro la interseccion
-        # usando un sistema de referencia intrinseco al segmento j0 (chi, eta)
-        theta_rel = theta1 - theta0 # angulo que forma el segmento j1 con el eje chi (intrinseco al segmento j0)
-        # me fijo que j1 no sea verticales en el sistema intrinseco a j0 (para no manejar pendientes infinitas)
-        m_rel_inf = iguales(theta_rel, np.pi*0.5, np.pi*1.0e-8) or iguales(theta_rel, -np.pi*0.5, np.pi*1.0e-8)
-        # coordenadas en (chi,eta) de los nodos del segmento j1
-        n0_j0, n1_j0 = self.con[j0] # nodos 0 y 1 del segmento j0
-        n0_j1, n1_j1 = self.con[j1] # nodos 0 y 1 del segmento j1
-        x_n0_j0, y_n0_j0 = coors[n0_j0] # coordenadas "xy" del nodo 0 del segmento j0
-        x_n1_j0, y_n1_j0 = coors[n1_j0] # coordenadas "xy" del nodo 1 del segmento j0
-        x_n0_j1, y_n0_j1 = coors[n0_j1] # coordenadas "xy" del nodo 0 del segmento j1
-        x_n1_j1, y_n1_j1 = coors[n1_j1] # coordenadas "xy" del nodo 1 del segmento j1
-        C0 = np.cos(theta0)
-        S0 = np.sin(theta0)
-        def cambio_de_coordenadas(x,y):
-            chi =  (x-x_n0_j0)*C0 + (y-y_n0_j0)*S0
-            eta = -(x-x_n0_j0)*S0 + (y-y_n0_j0)*C0
-            return chi, eta
-        chi_n1_j0, eta_n1_j0 = cambio_de_coordenadas(x_n1_j0, y_n1_j0)
-        chi_n0_j1, eta_n0_j1 = cambio_de_coordenadas(x_n0_j1, y_n0_j1)
-        chi_n1_j1, eta_n1_j1 = cambio_de_coordenadas(x_n1_j1, y_n1_j1)
-        # chequeo que el segmento 1 realmente corte al eje del 2
-        if np.sign(eta_n0_j1) == np.sign(eta_n1_j1):
-            return None # si eta no cambia de signo entonces no corta al eje
-        # supere varios chequeos
-        # calculo valor de chi de la interseccion
-        if m_rel_inf:
-            chi_in = chi_n0_j1
-        else:
-            m_rel = np.tan(theta_rel)
-            chi_in = chi_n0_j1 - eta_n0_j1/m_rel
-        # si la interseccion fue por fuera del segmento j0 entonces no es valida
-        dl_j0 = chi_n1_j0
-        fuera_de_seg_j0 = (chi_in<0) or (chi_in>dl_j0)
-        if fuera_de_seg_j0:
-            return None
-        else:
-            # la interseccion se da dentro del segmento
-            x_in = x_n0_j0 + chi_in*np.cos(theta0)
-            y_in = y_n0_j0 + chi_in*np.sin(theta0)
-            r = [x_in, y_in]
-            return r
-
 
 class Fibras(object):
     """ es algo como una lista con algunas funciones particulares
@@ -434,6 +376,13 @@ class Fibras(object):
 
     def add_fibra(self, fib_con):
         self.con.append(fib_con)
+
+    def insertar_segmento(self, j, k, s):
+        """ inserta un segmento en la conectividad de una fibra
+        j: indice de la fibra 
+        k: indice donde se inserta el nuevo segmento
+        s: indice del nuevo segmento para agregar a la conectividad """ 
+        self.con[j].insert(k,s)
 
 
 class Malla(object):
@@ -585,6 +534,66 @@ class Malla(object):
                     # y en ese caso no hay nada que hacer! puesto que el nodo ya esta en el borde
                     pass
 
+    def intersectar_fibras(self):
+        """ recorro las fibras y me fijo las intersecciones entre ellas
+        donde se produce una interseccion se crea un nuevo nodo (si no se intersecta en un nodo)
+        y se subdividen los segmentos que queden partidos en dos por la interseccion
+        finalmente se debe acomodar la conectividad por la aparicion de nuevos segmentos """
+        # primero tengo que recorrer todas las fibras y contrastarlas con las demas
+        # tomo la primera fibra y me fijo si intersecta a todas las demas
+        # despues la segunda fibra y me fijo si intersecta a todas menos a la primera (porque ya me fije)
+        # asi sucesivamente, la ultima fibra no necesito
+        num_f = len( self.fibs.con )
+        for f0 in range(num_f): # recorro todas las fibras
+            fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
+            num_s0 = len(fibcon0)
+            for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
+                fibcon1 = self.fibs.con[f1]
+                num_s1 = len(fibcon1) 
+                for j0 in range(num_s0): # recorro los segmentos de la fibra 0
+                    s0 = fibcon0[j0] 
+                    n_j0_0, n_j0_1 = self.segs.con[s0]
+                    for j1 in range(num_s1):
+                        s1 = fibcon1[j1] 
+                        n_j1_0, n_j1_1 = self.segs.con[s1]
+                        # ya tengo los indices de los nodos de los dos segmentos, 
+                        # ahora puedo obtener sus coordenadas y chequear interseccion 
+                        r_j0_0 = self.nods.r[n_j0_0]
+                        r_j0_1 = self.nods.r[n_j0_1]
+                        r_j1_0 = self.nods.r[n_j1_0]
+                        r_j1_1 = self.nods.r[n_j1_1]
+                        interseccion = calcular_interseccion(r_j0_0, r_j0_1, r_j1_0, r_j1_1)
+                        if interseccion is None: # no ha habido interseccion
+                            continue 
+                        else: 
+                            # hubo interseccion
+                            in_r, in_tipo, in_e_j0, in_e_j1 = interseccion
+                            # dependiendo del tipo tendre un nodo nuevo o no 
+                            if in_tipo==2: # el nodo interseccion es nuevo 
+                                self.nods.add_nodo(in_r, 2)
+                                new_node_index = len(self.nods.r) - 1
+                                # parto en dos los dos segmentos 
+                                subseg_j0_0 = [n_j0_0, new_node_index] 
+                                subseg_j0_1 = [new_node_index , n_j0_1]
+                                subseg_j1_0 = [n_j1_0, new_node_index] 
+                                subseg_j1_1 = [new_node_index , n_j1_1]
+                                # para cada segmento, cambio la conectividad de la primera mitad 
+                                # y agrego la segunda mitad a la lista como un nuevo segmento
+                                self.segs.cambiar_conectividad(s0, subseg_j0_0, self.nods.r)
+                                self.segs.cambiar_conectividad(s1, subseg_j1_0, self.nods.r)
+                                self.segs.add_segmento(subseg_j0_1, self.nods.r)
+                                self.segs.add_segmento(subseg_j1_1, self.nods.r)
+                                # ahora debo cambiar la conectividad de las fibra 
+                                # insertando un segmento en cada fibra en la posicion correcta
+                                index_newseg_f0 = len( self.segs.con ) - 2 # indice del nuevo segmento de la fibra f0 (subseg_j0_1)
+                                index_newseg_f1 = len( self.segs.con ) - 1 # indice del nuevo segmento de la fibra i1 (subseg_j1_1)
+                                self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
+                                self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
+                                
+                            
+                            
+
+
 
     def guardar_en_archivo(self, archivo="Malla.txt"):
         fid = open(archivo, "w")
@@ -640,7 +649,7 @@ class Malla(object):
         tipos = list()
         for i in range(num_r):
             j, t, x, y = (float(val) for val in fid.next().split())
-            tipos.append(t)
+            tipos.append(int(t))
             coors.append([x,y])
         # luego los segmentos
         target = "*segmentos"
@@ -676,15 +685,15 @@ class Malla(object):
         # listo
         return malla
 
-    def pre_graficar_fibras(self):
+    def pre_graficar_bordes(self):
         # seteo
         if not self.pregraficado:
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111)
+            margen = 0.1*self.L
+            self.ax.set_xlim(left=0-margen, right=self.L+margen)
+            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
             self.pregraficado = True
-        margen = 0.1*self.L
-        self.ax.set_xlim(left=0-margen, right=self.L+margen)
-        self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
         # dibujo los bordes del rve
         fron = []
         fron.append( [[0,self.L], [0,0]] )
@@ -695,6 +704,17 @@ class Malla(object):
         plt_fron1 = self.ax.plot(fron[1][0], fron[1][1], linestyle=":")
         plt_fron2 = self.ax.plot(fron[2][0], fron[2][1], linestyle=":")
         plt_fron3 = self.ax.plot(fron[3][0], fron[3][1], linestyle=":")
+
+
+    def pre_graficar_fibras(self):
+        # seteo
+        if not self.pregraficado:
+            self.fig = plt.figure()
+            self.ax = self.fig.add_subplot(111)
+            margen = 0.1*self.L
+            self.ax.set_xlim(left=0-margen, right=self.L+margen)
+            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
+            self.pregraficado = True
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx_fibs = [ list() for f in  self.fibs.con ]
@@ -714,27 +734,17 @@ class Malla(object):
                 r = self.nods.r[n]
                 xx_fibs[f].append(r[0])
                 yy_fibs[f].append(r[1])
-            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", label=str(f)) )
+            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker=".", label=str(f)) )
 
     def pre_graficar_nodos_frontera(self):
         # seteo
         if not self.pregraficado:
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111)
+            margen = 0.1*self.L
+            self.ax.set_xlim(left=0-margen, right=self.L+margen)
+            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
             self.pregraficado = True
-        margen = 0.1*self.L
-        self.ax.set_xlim(left=0-margen, right=self.L+margen)
-        self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
-        # dibujo los bordes del rve
-        fron = []
-        fron.append( [[0,self.L], [0,0]] )
-        fron.append( [[0,0], [self.L,0]] )
-        fron.append( [[0,self.L], [self.L,self.L]] )
-        fron.append( [[self.L,self.L], [self.L,0]] )
-        plt_fron0 = self.ax.plot(fron[0][0], fron[0][1], linestyle=":")
-        plt_fron1 = self.ax.plot(fron[1][0], fron[1][1], linestyle=":")
-        plt_fron2 = self.ax.plot(fron[2][0], fron[2][1], linestyle=":")
-        plt_fron3 = self.ax.plot(fron[3][0], fron[3][1], linestyle=":")
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -756,6 +766,7 @@ class Malla(object):
 
     def graficar(self):
         if not self.pregraficado:
+            self.pre_graficar_bordes()
             self.pre_graficar_nodos_frontera()
             self.pre_graficar_fibras()
         self.ax.legend(loc="upper left", numpoints=1, prop={"size":6})
