@@ -314,7 +314,7 @@ class Malla(object):
             self.calcular_pseudoviscosidades()
         else:
             self.psv = np.array(psv, dtype=float)
-        
+        z
     def get_x(self):
         return self.nodos.x
 
