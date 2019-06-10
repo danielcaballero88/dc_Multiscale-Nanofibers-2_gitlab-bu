@@ -23,7 +23,7 @@ def iguales(x, y, tol=1.0e-8):
     """ returns True if x is equal to y, both floats """
     return np.abs(x-y)<tol
 
-def calcular_largo_de_segmento(r0, r1):
+def calcular_longitud_de_segmento(r0, r1):
     """ dados dos nodos de un segmento
     r0: coordenadas "xy" del nodo 0
     r1: coordenadas "xy" del nodo 1

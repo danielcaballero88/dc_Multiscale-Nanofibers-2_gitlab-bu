@@ -1,1 +1,3 @@
 *PARAMETROS CONSTITUTIVOS
+{"Et":0.1e9, "Eb":0.1e6}
+
