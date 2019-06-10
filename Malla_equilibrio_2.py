@@ -5,7 +5,7 @@ Coordenadas y conectividad
 """
 import numpy as np
 from matplotlib import pyplot as plt
-from Aux import find_string_in_file, calcular_largo_de_segmento
+from Aux import find_string_in_file, calcular_longitud_de_segmento
 
 class Nodos(object):
     def __init__(self):
@@ -230,16 +230,19 @@ class Subfibras(Conectividad):
     con algunos atributos y metodos particulares """
 
     def __init__(self):
-        Conectividad.__init__()
-        self.longs0 = np.zeros(self.num, dtype=float) # longitudes iniciales de las fibras
+        Conectividad.__init__(self)
+        self.lete0 = None # va a ser un array de numpy luego, longitudes end-to-end iniciales
+        self.loco0 = None # tambien va a ser un array de numpy, longitudes de contorno iniciales
         self.ecuacion_constitutiva = None
         self.param_con = None # va a tener que ser un array de (num_subfibras, num_paramcon) presumiendo que cada subfibra pueda tener diferentes valores de parametros
 
     @classmethod
-    def closed(cls, conec, coors0, param_con, ec_con):
+    def closed(cls, conec, locos, coors0, param_con, ec_con):
         instance = cls()
-        instance.add_conec_listoflists(conec)
+        instance.add_conec_listoflists(conec) # calcula ne y je
+        instance.cerrar() # calcula el ie y se pasan los arrays a numpy
         instance.calcular_longs0(coors0)
+        instance.loco0 = np.array(locos)
         instance.param_con = param_con
         instance.ecuacion_constitutiva = ec_con
         return instance
@@ -258,7 +261,7 @@ class Subfibras(Conectividad):
 
     def calcular_longs0(self, xnods0):
         """ calcular las longitudes iniciales de todas las subfibras """
-        self.longs0 = self.calcular_longitudes(xnods0, self.longs0)
+        self.lete0 = self.calcular_longitudes(xnods0, self.lete0)
 
     def calcular_longitudes(self, xnods, longs=None):
         """ calcular las longitudes de las fibras """
@@ -272,12 +275,12 @@ class Subfibras(Conectividad):
             longs[jsf] = np.sqrt( np.dot(dr,dr) )
         return longs
 
-    def calcular_tension_j(self, lam, j):
+    def calcular_tension_j(self, j, lam):
         return self.ecuacion_constitutiva(lam, self.param_con[j])
 
     def calcular_elongaciones(self, xnods):
         longs = self.calcular_longitudes(xnods)
-        lams = longs/self.longs0
+        lams = longs/self.lete0
         return lams
 
     def calcular_tensiones(self, xnods):
@@ -381,6 +384,7 @@ class Malla(object):
         self.nodos = Nodos()
         self.sfs = Subfibras() # las subfibras las conecto con los nodos que las componen
         self.psv = None
+        self.L = None # tamano del rve
         self.pregraficado = False
         self.fig = None
         self.ax = None
@@ -393,10 +397,16 @@ class Malla(object):
         # para resolver el sistema uso pseudoviscosidad
         instance.psv = np.array(psv, dtype=float)
         instance.open = False
+        return instance
 
     @classmethod
-    def leer_de_archivo(cls, archivo):
+    def leer_de_archivo_malla_completa(cls, archivo, par_con_IN, ecu_con, psvis):
         fid = open(archivo, "r")
+        # primero leo los parametros
+        target = "*parametros"
+        ierr = find_string_in_file(fid, target, True)
+        #L, dl, dtheta = (float(val) for val in fid.next().split())
+        L = float(fid.next())
         # leo los nodos
         target = "*coordenadas"
         ierr = find_string_in_file(fid, target, True)
@@ -478,14 +488,64 @@ class Malla(object):
                         l = 0.
                         new_sfb = [0, 0]
                         new_sfb[0] = ms_nods_n.index(n1) # el primer nodo de la siguiente subfibra sera el ultimo nodo de la anterior
-        # debug
-        print ms_nods_n
-        print ms_nods_r
-        print ms_nods_t
-        print ms_sfbs_c
-        print ms_sfbs_l
-        return ms_nods_r, ms_sfbs_c
+        # # debug
+        # print ms_nods_n
+        # print ms_nods_r
+        # print ms_nods_t
+        # print ms_sfbs_c
+        # print ms_sfbs_l
+        # return ms_nods_r, ms_sfbs_c
+        # ---
+        # armo los objetos
+        # los nodos a partir de las coordenadas y los tipos
+        nodos = Nodos.from_coordenadas(ms_nods_r, ms_nods_t)
+        # las subfibras con los parmetros constitutivos para cada subfibra
+        # calculo el lamr por subfibra
+        par_con = np.zeros( (len(ms_sfbs_c), len(par_con_IN)), dtype=float )
+        for i in range(len(ms_sfbs_c)):
+            r0_i = ms_nods_r[ ms_sfbs_c[i][0] ]
+            r1_i = ms_nods_r[ ms_sfbs_c[i][1] ]
+            lete_i = calcular_longitud_de_segmento(r0_i, r1_i)
+            lamr_i = ms_sfbs_l[i] / lete_i
+            par_con_i = par_con_IN
+            par_con_i[2] = lamr_i
+            par_con[i,:] = par_con_i
+        sfbs = Subfibras.closed(ms_sfbs_c, ms_sfbs_l, nodos.x, par_con, ecu_con)
+        psv = [psvis]*nodos.num
+        malla = Malla.closed(nodos, sfbs, psv)
+        malla.L = L
+        return malla
 
+    def guardar_en_archivo(self, archivo):
+        fid = open(archivo, "w")
+        # ---
+        # escribo los nodos: indice, tipo, y coordenadas
+        dString = "*Coordenadas \n" + str(self.nodos.num) + "\n"
+        fid.write(dString)
+        for n in range( self.nodos.num ):
+            dString = "{:6d}".format(n)
+            dString += "{:2d}".format(self.nodos.tipos[n])
+            dString += "".join( "{:+17.8e}".format(val) for val in self.nodos.x0[n] ) + "\n"
+            fid.write(dString)
+        # ---
+        # sigo con las subfibras: indice, nodo inicial y nodo final, longitud contorno
+        dString = "*Segmentos \n" + str( self.sfs.num ) + "\n"
+        fid.write(dString)
+        for s in range( self.sfs.num ):
+            n0, n1 = self.sfs.get_con_sf(s)
+            loco = self.sfs.loco0[s]
+            lete = self.sfs.lete0[s]
+            lamr = self.sfs.param_con[s][2]
+            fmt = "{:6d}"*3 + "{:17.8e}"*3
+            dString = fmt.format(s, n0, n1, loco, lete, lamr) +"\n"
+            fid.write(dString)
+        # ---
+        # termine
+        fid.close()
+
+    @classmethod
+    def leer_de_archivo(self):
+        raise NotImplementedError
 
     def get_x(self):
         return self.nodos.x
@@ -507,9 +567,9 @@ class Malla(object):
             x_fin = x1[nod_fin]
             dr = x_fin - x_ini
             dl = np.sqrt(np.dot(dr,dr))
-            lam = dl / self.sfs.longs0[jsf]
+            lam = dl / self.sfs.lete0[jsf]
             a = dr/dl
-            t = self.sfs.tension_subfibra(jsf, lam)
+            t = self.sfs.calcular_tension_j(jsf, lam)
             tracciones[jsf] = t*a
         return tracciones
 
@@ -578,35 +638,73 @@ class Malla(object):
         nodos_criticos = flag_big_dx + flag_div_dx
         self.psv[nodos_criticos] = 2.0*self.psv[nodos_criticos]
 
-    def pre_graficar_bordes(self, L):
+    def pre_graficar_bordes0(self):
         # seteo
         if not self.pregraficado:
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111)
-            margen = 0.1*L
-            self.ax.set_xlim(left=0.-margen, right=L+margen)
-            self.ax.set_ylim(bottom=0.-margen, top=L+margen)
+            margen = 0.1*self.L
+            self.ax.set_xlim(left=0.-margen, right=self.L+margen)
+            self.ax.set_ylim(bottom=0.-margen, top=self.L+margen)
             self.pregraficado = True
         # dibujo los bordes del rve
-        fron = []
-        fron.append( [[0.,L], [0.,0.]] )
-        fron.append( [[0.,0.], [L,0.]] )
-        fron.append( [[0.,L], [L,L]] )
-        fron.append( [[L,L], [L,0.]] )
-        plt_fron0 = self.ax.plot(fron[0][0], fron[0][1], linestyle=":")
-        plt_fron1 = self.ax.plot(fron[1][0], fron[1][1], linestyle=":")
-        plt_fron2 = self.ax.plot(fron[2][0], fron[2][1], linestyle=":")
-        plt_fron3 = self.ax.plot(fron[3][0], fron[3][1], linestyle=":")
+        x0 = 0.
+        x1 = self.L
+        x2 = self.L
+        x3 = 0.
+        y0 = 0.
+        y1 = 0.
+        y2 = self.L
+        y3 = self.L
+        xx = [x0, x1, x2, x3, x0]
+        yy = [y0, y1, y2, y3, y0]
+        plt_fron = self.ax.plot(xx, yy, linestyle=":", color="gray")
 
-    def pre_graficar_subfibras(self):
+    def pre_graficar_bordes(self, F):
         # seteo
         if not self.pregraficado:
             self.fig = plt.figure()
             self.ax = self.fig.add_subplot(111)
-            margen = 0.1*L
-            self.ax.set_xlim(left=0.-margen, right=L+margen)
-            self.ax.set_ylim(bottom=0.-margen, top=L+margen)
             self.pregraficado = True
+        margen = 0.1*self.L
+        izq = 0. - margen * np.maximum(F[0,0], F[1,1])
+        der = (self.L + margen) * np.maximum(F[0,0], F[1,1])
+        aba = izq
+        arr = der
+        self.ax.set_xlim(left=izq, right=der)
+        self.ax.set_ylim(bottom=aba, top=arr)
+
+        # dibujo los bordes del rve
+        x0 = 0.
+        x1 = self.L*F[0,0]
+        x2 = self.L*(F[0,0]+F[0,1])
+        x3 = self.L*F[0,1]
+        y0 = 0.
+        y1 = self.L*F[1,0]
+        y2 = self.L*(F[1,1]+F[1,0])
+        y3 = self.L*F[1,1]
+        xx = [x0, x1, x2, x3, x0]
+        yy = [y0, y1, y2, y3, y0]
+        plt_fron = self.ax.plot(xx, yy, linestyle=":")
+
+    def pre_graficar_subfibras0(self):
+        # previamente hay que haber llamado a pre_graficar_bordes
+        assert self.pregraficado == True
+        # grafico las subfibras
+        for i in range(self.sfs.num):
+            xx = list() # valores x
+            yy = list() # valores y
+            # son dos nodos por subfibra
+            n0, n1 = self.sfs.get_con_sf(i)
+            r0 = self.nodos.x0[n0]
+            r1 = self.nodos.x0[n1]
+            xx = [r0[0], r1[0]]
+            yy = [r0[1], r1[1]]
+            p = self.ax.plot(xx, yy, label=str(i), linestyle=":", color="gray")
+
+    def pre_graficar_subfibras(self):
+        # previamente hay que haber llamado a pre_graficar_bordes
+        assert self.pregraficado == True
         # grafico las subfibras
         for i in range(self.sfs.num):
             xx = list() # valores x
@@ -617,4 +715,23 @@ class Malla(object):
             r1 = self.nodos.x[n1]
             xx = [r0[0], r1[0]]
             yy = [r0[1], r1[1]]
-            p = self.ax.plot(xx, yy, label=str(i))
+            p = self.ax.plot(xx, yy, label=str(i), linestyle="-")
+
+    def pre_graficar0(self):
+        self.pre_graficar_bordes0()
+        self.pre_graficar_subfibras0()
+
+    def pre_graficar(self, F):
+        self.pre_graficar_bordes(F)
+        self.pre_graficar_subfibras()
+
+    def graficar0(self):
+        self.pre_graficar0()
+        self.ax.legend(loc="upper left", numpoints=1, prop={"size":6})
+        plt.show()
+
+    def graficar(self, F, inicial=True):
+        if inicial:
+            self.pre_graficar0()
+        self.pre_graficar(F)
+        plt.show()
