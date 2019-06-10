@@ -73,8 +73,8 @@ class Segmentos(object):
         """ se modifica la conectividad de un segmento (j) de la lista
         se le da la nueva conectividad new_con
         y por lo tanto se vuelve a calcular su angulo y longitud
-        (util para dividir segmentos en 2) """ 
-        self.con[j] = new_con 
+        (util para dividir segmentos en 2) """
+        self.con[j] = new_con
         longitud, angulo = self.calcular_long_y_theta(new_con, coors)
         self.thetas[j] = angulo
         self.longs[j] = longitud
@@ -195,17 +195,15 @@ class Fibras(object):
 
     def insertar_segmento(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
-        j: indice de la fibra 
+        j: indice de la fibra
         k: indice donde se inserta el nuevo segmento
-        s: indice del nuevo segmento para agregar a la conectividad """ 
+        s: indice del nuevo segmento para agregar a la conectividad """
         self.con[j].insert(k,s)
 
 
 class Malla(object):
-    def __init__(self, L, dl, dtheta):
+    def __init__(self, L):
         self.L = L
-        self.dl = dl
-        self.dtheta = dtheta
         self.fibs = Fibras() # lista vacia
         self.segs = Segmentos() # lista vacia
         self.nods = Nodos() # tiene dos listas vacias
@@ -229,7 +227,7 @@ class Malla(object):
         self.bordes_s.add_segmento([3,0], self.bordes_n.r)
 
 
-    def make_fibra(self):
+    def make_fibra(self, dl, dtheta):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -251,8 +249,8 @@ class Malla(object):
         self.nods.add_nodo([x0,y0], 1) # agrego el nodo
         # ahora armo el primer segmento de la fibra
         theta = np.random.rand() * np.pi + b0*0.5*np.pi # angulo inicial
-        dx = self.dl * np.cos(theta)
-        dy = self.dl * np.sin(theta)
+        dx = dl * np.cos(theta)
+        dy = dl * np.sin(theta)
         # tengo el nuevo nodo, lo agrego
         self.nods.add_nodo([x0+dx, y0+dy], 0)
         # puedo armar el primer segmento
@@ -275,10 +273,10 @@ class Malla(object):
                 break
             # de lo contrario armo un nuevo segmento a partir del ultimo nodo
             # el angulo puede sufrir variacion
-            theta = theta + self.dtheta * (2.0*np.random.rand() - 1.0)
+            theta = theta + dtheta * (2.0*np.random.rand() - 1.0)
             # desplazamiento:
-            dx = self.dl * np.cos(theta)
-            dy = self.dl * np.sin(theta)
+            dx = dl * np.cos(theta)
+            dy = dl * np.sin(theta)
             # nuevo nodo
             x = self.nods.r[-1][0] + dx
             y = self.nods.r[-1][1] + dy
@@ -365,59 +363,55 @@ class Malla(object):
             num_s0 = len(fibcon0)
             for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
                 fibcon1 = self.fibs.con[f1]
-                num_s1 = len(fibcon1) 
+                num_s1 = len(fibcon1)
                 for j0 in range(num_s0): # recorro los segmentos de la fibra 0
-                    s0 = fibcon0[j0] 
+                    s0 = fibcon0[j0]
                     n_j0_0, n_j0_1 = self.segs.con[s0]
                     for j1 in range(num_s1):
-                        s1 = fibcon1[j1] 
+                        s1 = fibcon1[j1]
                         n_j1_0, n_j1_1 = self.segs.con[s1]
-                        # ya tengo los indices de los nodos de los dos segmentos, 
-                        # ahora puedo obtener sus coordenadas y chequear interseccion 
+                        # ya tengo los indices de los nodos de los dos segmentos,
+                        # ahora puedo obtener sus coordenadas y chequear interseccion
                         r_j0_0 = self.nods.r[n_j0_0]
                         r_j0_1 = self.nods.r[n_j0_1]
                         r_j1_0 = self.nods.r[n_j1_0]
                         r_j1_1 = self.nods.r[n_j1_1]
                         interseccion = calcular_interseccion(r_j0_0, r_j0_1, r_j1_0, r_j1_1)
                         if interseccion is None: # no ha habido interseccion
-                            continue 
-                        else: 
+                            continue
+                        else:
                             # hubo interseccion
                             in_r, in_tipo, in_e_j0, in_e_j1 = interseccion
-                            # dependiendo del tipo tendre un nodo nuevo o no 
-                            if in_tipo==2: # el nodo interseccion es nuevo 
+                            # dependiendo del tipo tendre un nodo nuevo o no
+                            if in_tipo==2: # el nodo interseccion es nuevo
                                 self.nods.add_nodo(in_r, 2)
                                 new_node_index = len(self.nods.r) - 1
-                                # parto en dos los dos segmentos 
-                                subseg_j0_0 = [n_j0_0, new_node_index] 
+                                # parto en dos los dos segmentos
+                                subseg_j0_0 = [n_j0_0, new_node_index]
                                 subseg_j0_1 = [new_node_index , n_j0_1]
-                                subseg_j1_0 = [n_j1_0, new_node_index] 
+                                subseg_j1_0 = [n_j1_0, new_node_index]
                                 subseg_j1_1 = [new_node_index , n_j1_1]
-                                # para cada segmento, cambio la conectividad de la primera mitad 
+                                # para cada segmento, cambio la conectividad de la primera mitad
                                 # y agrego la segunda mitad a la lista como un nuevo segmento
                                 self.segs.cambiar_conectividad(s0, subseg_j0_0, self.nods.r)
                                 self.segs.cambiar_conectividad(s1, subseg_j1_0, self.nods.r)
                                 self.segs.add_segmento(subseg_j0_1, self.nods.r)
                                 self.segs.add_segmento(subseg_j1_1, self.nods.r)
-                                # ahora debo cambiar la conectividad de las fibra 
+                                # ahora debo cambiar la conectividad de las fibra
                                 # insertando un segmento en cada fibra en la posicion correcta
                                 index_newseg_f0 = len( self.segs.con ) - 2 # indice del nuevo segmento de la fibra f0 (subseg_j0_1)
                                 index_newseg_f1 = len( self.segs.con ) - 1 # indice del nuevo segmento de la fibra i1 (subseg_j1_1)
                                 self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
                                 self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
-                                
-                            
-                            
-
 
 
     def guardar_en_archivo(self, archivo="Malla.txt"):
         fid = open(archivo, "w")
         # ---
         # primero escribo L, dl y dtheta
-        dString = "*Parametros (L, dl, dtheta) \n"
-        fmt = "{:17.8e}"*3
-        dString += fmt.format(self.L, self.dl, self.dtheta) + "\n"
+        dString = "*Parametros (L) \n"
+        fmt = "{:17.8e}"
+        dString += fmt.format(self.L) + "\n"
         fid.write(dString)
         # ---
         # escribo los nodos: indice, tipo, y coordenadas
@@ -456,7 +450,7 @@ class Malla(object):
         # primero leo los parametros
         target = "*parametros"
         ierr = find_string_in_file(fid, target, True)
-        L, dl, dtheta = (float(val) for val in fid.next().split())
+        L = float( fid.next() )
         # luego busco coordenadas
         target = "*coordenadas"
         ierr = find_string_in_file(fid, target, True)
@@ -486,7 +480,7 @@ class Malla(object):
             fcon = out[1:]
             fibs.append(fcon)
         # ahora que tengo todo armo el objeto
-        malla = cls(L, dl, dtheta)
+        malla = cls(L)
         # le asigno los nodos
         for i in range(num_r):
             malla.nods.add_nodo(coors[i], tipos[i])
