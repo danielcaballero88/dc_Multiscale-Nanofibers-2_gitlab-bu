@@ -8,9 +8,9 @@ class Lista_de_listas_de_dos_floats(collections.MutableSequence):
         # cada item debe ser una lista de dos floats (coordenadas)
         if not isinstance(v, list):
             raise TypeError, v
-        else: 
+        else:
             if len(v)!=2:
-                raise ValueError, len(v) 
+                raise ValueError, len(v)
             if not isinstance(v[0],float) or not isinstance(v[1],float):
                 raise TypeError, v
 
@@ -39,7 +39,7 @@ class Lista_de_algunos_enteros(collections.MutableSequence):
 
     def check(self, v):
         # cada item debe ser una lista de integers 0, 1 o 2 (continuacion, frontera o interseccion)
-        if not v in self.algunos_enteros: 
+        if not v in self.algunos_enteros:
             raise ValueError, v
 
     def __len__(self): return len(self.lista)
@@ -63,17 +63,44 @@ class Lista_de_algunos_enteros(collections.MutableSequence):
 
 class Lista_de_listas_de_dos_enteros(collections.MutableSequence):
     def __init__(self):
-        self.lista = list() 
+        self.lista = list()
 
     def check(self, v):
         # cada item debe ser una lista de dos nodos (indices), integers
         if not isinstance(v, list):
             raise TypeError, v
-        else: 
+        else:
             if len(v)!=2:
-                raise ValueError, len(v) 
+                raise ValueError, len(v)
             if not isinstance(v[0],int) or not isinstance(v[1],int):
                 raise TypeError, v
+
+    def __len__(self): return len(self.lista)
+
+    def __getitem__(self, i): return self.lista[i]
+
+    def __delitem__(self, i): del self.lista[i]
+
+    def __setitem__(self, i, v):
+        self.check(v)
+        self.lista[i] = v
+
+    def insert(self, i, v):
+        self.check(v)
+        self.lista.insert(i, v)
+
+    def __str__(self):
+        return str(self.lista)
+
+
+class Lista_de_enteros(collections.MutableSequence):
+    def __init__(self):
+        self.lista = list()
+
+    def check(self, v):
+        # cada item debe ser una lista de integers 0, 1 o 2 (continuacion, frontera o interseccion)
+        if not isinstance(v,int):
+            raise ValueError, v
 
     def __len__(self): return len(self.lista)
 
@@ -99,7 +126,7 @@ class Lista_de_floats(collections.MutableSequence):
 
     def check(self, v):
         # cada item debe ser una lista de integers 0, 1 o 2 (continuacion, frontera o interseccion)
-        if not isinstance(v,float): 
+        if not isinstance(v,float):
             raise ValueError, v
 
     def __len__(self): return len(self.lista)
@@ -131,7 +158,7 @@ class Lista_de_listas_de_enteros(collections.MutableSequence):
         # cada item debe ser una lista de segmentos (indices), integers
         if not isinstance(v, list):
             raise TypeError, v
-        else: 
+        else:
             for item in v:
                 if not isinstance(item,int):
                     raise TypeError, item

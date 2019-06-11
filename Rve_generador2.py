@@ -173,15 +173,17 @@ class Fibras(object):
     pero la propia instancia se comporta como la lista """
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
+        self.capas = TypedLists.Lista_de_enteros()
 
     def add_seg_a_fibra(self, j, seg):
         # agrego seg
         assert isinstance(seg, int)
         self.con[j].append(seg)
 
-    def nueva_fibra_vacia(self):
+    def nueva_fibra_vacia(self, capa):
         # agrego una nueva fibra, vacia por ahora
         self.con.append( list() )
+        self.capas.append(capa)
 
     def add_seg_a_fibra_actual(self, seg):
         # argrego seg a la ultima fibra
@@ -190,8 +192,9 @@ class Fibras(object):
         assert n>=1
         self.con[n-1].append(seg)
 
-    def add_fibra(self, fib_con):
+    def add_fibra(self, fib_con, capa):
         self.con.append(fib_con)
+        self.capas.append(capa)
 
     def insertar_segmento(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
@@ -227,7 +230,7 @@ class Malla(object):
         self.bordes_s.add_segmento([3,0], self.bordes_n.r)
 
 
-    def make_fibra(self, dl, dtheta):
+    def make_fibra(self, dl, dtheta, capa):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -287,7 +290,7 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
-        self.fibs.add_fibra(f_con)
+        self.fibs.add_fibra(f_con, capa)
 
 
     def get_punto_sobre_frontera(self):
@@ -359,9 +362,13 @@ class Malla(object):
         # asi sucesivamente, la ultima fibra no necesito
         num_f = len( self.fibs.con )
         for f0 in range(num_f): # recorro todas las fibras
+            capa0 = self.fibs.capas[f0]
             fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
             num_s0 = len(fibcon0)
             for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
+                capa1 = self.fibs.capas[f1]
+                if not capa1 in (capa0-1, capa0, capa0+1): # solo las fibras de capas adyacentes pueden tocarse
+                    continue # paso a la siguiente fibra, esta no intersecta con f0
                 fibcon1 = self.fibs.con[f1]
                 num_s1 = len(fibcon1)
                 for j0 in range(num_s0): # recorro los segmentos de la fibra 0
@@ -432,13 +439,14 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # termino con las fibras: indice, y segmentos
+        # termino con las fibras: indice, capa y segmentos
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f in range( len(self.fibs.con) ):
             nsegs = len(self.fibs.con[f])
-            dString = "{:6d}".format(f)
-            dString += "".join( "{:6d}".format(val) for val in self.fibs.con[f] ) + "\n"
+            dString = "{:6d}".format(f) # indice
+            dString += "{:6d}".format(self.fibs.capas[f]) # capa
+            dString += "".join( "{:6d}".format(val) for val in self.fibs.con[f] ) + "\n" # conectividad
             fid.write(dString)
         # ---
         # termine
@@ -474,11 +482,14 @@ class Malla(object):
         ierr = find_string_in_file(fid, target, True)
         num_f = int(fid.next())
         fibs = list()
+        capas = list()
         for i in range(num_f):
             out = [int(val) for val in fid.next().split()]
             j = out[0]
-            fcon = out[1:]
+            capa = out[1]
+            fcon = out[2:]
             fibs.append(fcon)
+            capas.append(capa)
         # ahora que tengo todo armo el objeto
         malla = cls(L)
         # le asigno los nodos
@@ -491,7 +502,8 @@ class Malla(object):
         # le asigno las fibras
         for i in range(num_f):
             f_con = fibs[i]
-            malla.fibs.add_fibra(f_con)
+            capa = capas[i]
+            malla.fibs.add_fibra(f_con, capa)
         # listo
         return malla
 
@@ -517,6 +529,8 @@ class Malla(object):
 
 
     def pre_graficar_fibras(self):
+        nc = np.max(self.fibs.capas) + 1
+        colores = plt.cm.rainbow(np.linspace(0,1,nc))
         # seteo
         if not self.pregraficado:
             self.fig = plt.figure()
@@ -544,7 +558,7 @@ class Malla(object):
                 r = self.nods.r[n]
                 xx_fibs[f].append(r[0])
                 yy_fibs[f].append(r[1])
-            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker=".", label=str(f)) )
+            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker=".", label=str(f), color=colores[self.fibs.capas[f]]) )
 
     def pre_graficar_nodos_frontera(self):
         # seteo
