@@ -12,7 +12,7 @@ Los nodos tienen coordenadas y tipo (0=continuacion, 1=frontera, 2=interseccion)
 
 import numpy as np
 from matplotlib import pyplot as plt
-import collections
+# import collections
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
 
@@ -173,15 +173,19 @@ class Fibras(object):
     pero la propia instancia se comporta como la lista """
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
+        self.dls = TypedLists.Lista_de_floats()
+        self.dthetas = TypedLists.Lista_de_floats()
 
     def add_seg_a_fibra(self, j, seg):
         # agrego seg
         assert isinstance(seg, int)
         self.con[j].append(seg)
 
-    def nueva_fibra_vacia(self):
+    def nueva_fibra_vacia(self, dl, dtheta):
         # agrego una nueva fibra, vacia por ahora
         self.con.append( list() )
+        self.dls.append(dl)
+        self.dthetas.append(dtheta)
 
     def add_seg_a_fibra_actual(self, seg):
         # argrego seg a la ultima fibra
@@ -190,8 +194,10 @@ class Fibras(object):
         assert n>=1
         self.con[n-1].append(seg)
 
-    def add_fibra(self, fib_con):
+    def add_fibra(self, fib_con, dl, dtheta):
         self.con.append(fib_con)
+        self.dls.append(dl)
+        self.dthetas.append(dtheta)
 
     def insertar_segmento(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
@@ -287,7 +293,7 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
-        self.fibs.add_fibra(f_con)
+        self.fibs.add_fibra(f_con, dl, dtheta)
 
 
     def get_punto_sobre_frontera(self):
@@ -432,12 +438,13 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # termino con las fibras: indice, y segmentos
+        # termino con las fibras: indice, dl, dtheta y segmentos
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f in range( len(self.fibs.con) ):
             nsegs = len(self.fibs.con[f])
             dString = "{:6d}".format(f)
+            dString += "{:17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.dthetas[f])
             dString += "".join( "{:6d}".format(val) for val in self.fibs.con[f] ) + "\n"
             fid.write(dString)
         # ---
@@ -474,11 +481,17 @@ class Malla(object):
         ierr = find_string_in_file(fid, target, True)
         num_f = int(fid.next())
         fibs = list()
+        dls = list()
+        dthetas = list()
         for i in range(num_f):
             out = [int(val) for val in fid.next().split()]
             j = out[0]
-            fcon = out[1:]
+            dl = out[1]
+            dtheta = out[2]
+            fcon = out[3:]
             fibs.append(fcon)
+            dls.append(dl)
+            dthetas.append(dtheta)
         # ahora que tengo todo armo el objeto
         malla = cls(L)
         # le asigno los nodos
@@ -491,7 +504,9 @@ class Malla(object):
         # le asigno las fibras
         for i in range(num_f):
             f_con = fibs[i]
-            malla.fibs.add_fibra(f_con)
+            dl = dls[i]
+            dtheta = dthetas[i]
+            malla.fibs.add_fibra(f_con, dl, dtheta)
         # listo
         return malla
 

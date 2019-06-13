@@ -3,14 +3,7 @@ from Malla_equilibrio_2 import Malla
 from matplotlib import pyplot as plt
 
 parcon = [0.1e9, 0.1e6, 0.0] # Et, Eb y lamr (que va a ser calculado fibra a fibra)
-def eccon(lam, paramcon):
-    Et = paramcon[0]
-    Eb = paramcon[1]
-    lamr = paramcon[2]
-    if lam<=lamr:
-        return Et*(lam-1.)
-    else:
-        return Eb*(lamr-1.) + Et*(lam/lamr - 1.)
+eccon = 0 # lineal con reclutamiento
 pseudovisc = 0.1e11
 m = Malla.leer_de_archivo_malla_completa("Malla.txt", parcon, eccon, pseudovisc)
 

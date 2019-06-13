@@ -24,24 +24,17 @@ class Nodos(object):
         self.mask_fr = []
         self.mask_in = []
 
-
     @classmethod
-    def from_coordenadas(cls, coors, tipos):
+    def from_coordenadas_y_tipos(cls, coors, tipos):
         instance = cls()
         for coor, tipo in zip(coors,tipos):
-            instance.check_xnod_tipo(coor, tipo)
+            instance.check_coor_tipo(coor, tipo)
             instance.num += 1
             instance.x0.append(coor)
             instance.x.append(coor)
             instance.tipos.append(tipo)
         instance.cerrar()
         return instance
-
-    def get_nodos_fr(self):
-        return self.x0[self.mask_fr]
-
-    def get_nodos_in(self):
-        return self.x0[self.mask_in]
 
     def abrir(self):
         """ es necesario para agregar mas nodos """
@@ -52,26 +45,49 @@ class Nodos(object):
         self.mask_in = [val for val in self.mask_in]
         self.open = True
 
-    def check_xnod_tipo(self, xnod, tipo):
-        assert isinstance(xnod, list)
-        assert len(xnod) == 2
-        assert isinstance(xnod[0], float)
-        assert isinstance(xnod[1], float)
+    # ---
+    # Ecuaciones de chequeo
+    def check_coors_tipos(self, coors, tipos, exhaustivo=False):
+        assert isinstance(coors, list)
+        assert isinstance(tipos, list)
+        assert len(coors) == len(tipos)
+        if exhaustivo:
+            for coor, tipo in zip(coors, tipos):
+                self.check_coor(coor)
+                self.check_tipo(tipo)
 
-    def add_nodo(self, xnod, tipo):
+    def check_coor_tipo(self, coor, tipo):
+        self.check_coor(coor)
+        self.check_tipo(tipo)
+
+    def check_coor(self, coor):
+        assert isinstance(coor, list)
+        assert len(coor) == 2
+        assert isinstance(coor[0], float)
+        assert isinstance(coor[1], float)
+
+    def check_tipo(self, tipo):
+        assert isinstance(tipo, int)
+    # ---
+
+    def add_nodo(self, coor, tipo, chequear=True):
         if self.open:
-            self.check_xnod_tipo(xnod, tipo)
+            if chequear:
+                self.check_coor_tipo(coor, tipo)
             self.num += 1
-            self.x0.append(xnod)
-            self.x.append(xnod)
+            self.x0.append(coor)
+            self.x.append(coor)
             self.tipos.append(tipo)
         else:
             raise RuntimeError("nodos closed, no se pueden agregar nodos")
 
-    def add_nodos(self, n, x, tipo):
+    def add_nodos(self, coors, tipos, chequear=True):
+        if chequear:
+            self.check_coors_tipos(coors, tipos, exhaustivo=True)
+        n = len(coors)
         if self.open:
             for i in range(n):
-                self.add_nodo(x[i], tipo)
+                self.add_nodo(coors[i], tipos, chequear=False)
         else:
             raise RuntimeError("nodos closed, no se pueden agregar nodos")
 
@@ -85,6 +101,7 @@ class Nodos(object):
         self.num_fr = np.sum(self.mask_fr)
         self.num_in = np.sum(self.mask_in)
         self.open = False
+
 
 class Conectividad(object):
     """
@@ -231,60 +248,94 @@ class Subfibras(Conectividad):
 
     def __init__(self):
         Conectividad.__init__(self)
-        self.lete0 = None # va a ser un array de numpy luego, longitudes end-to-end iniciales
-        self.loco0 = None # tambien va a ser un array de numpy, longitudes de contorno iniciales
+        self.letes0 = None # va a ser un array de numpy luego, longitudes end-to-end iniciales
+        self.locos0 = None # tambien va a ser un array de numpy, longitudes de contorno iniciales
+        self.lamsr = None # loco0/lete0
         self.ecuacion_constitutiva = None
         self.param_con = None # va a tener que ser un array de (num_subfibras, num_paramcon) presumiendo que cada subfibra pueda tener diferentes valores de parametros
 
+    def asignar_conectividad(self, conec):
+        """ asigna conectividad al objeto de subfibras
+        por ahora queda abierta (solo tengo ne y je, como listas) """
+        self.add_conec_listoflists(conec) # calcula el ne y el je
+
+    def asignar_ecuacion_constitutiva(self, param_con, ec_con):
+        """ asigna parametros constitutivos y ecuacion constitutiva
+        param_con tiene que ser un array de (nsubfibras, nparamcon) """
+        self.param_con = param_con
+        self.ecuacion_constitutiva = self.ecuaciones_constitutivas(ec_con)
+
+    def cerrar(self, locos0,  coors0):
+        Conectividad.cerrar(self)
+        self.locos0 = locos0
+        self.calcular_letes0(coors0)
+        self.lamsr = self.locos0 / self.letes0
+
     @classmethod
-    def closed(cls, conec, locos, coors0, param_con, ec_con):
+    def closed(cls, conec, locos0, coors0, param_con, ec_con):
         instance = cls()
         instance.add_conec_listoflists(conec) # calcula ne y je
-        instance.cerrar() # calcula el ie y se pasan los arrays a numpy
-        instance.calcular_longs0(coors0)
-        instance.loco0 = np.array(locos)
-        instance.param_con = param_con
-        instance.ecuacion_constitutiva = ec_con
+        instance.asignar_ecuacion_constitutiva(param_con, ec_con)
+        instance.cerrar(locos0, coors0) # calcula el ie y se pasan los arrays a numpy, ademas asigna locos0 y calcula letes0 y lamsr
+        instance.ecuacion_constitutiva = instance.ecuaciones_constitutivas(ec_con)
         return instance
+
+    @staticmethod
+    def ecuaciones_constitutivas(ecucon):
+        """ de una lista de funciones devuelve una sola segun el indice ecucon
+        consigo un comportamiento similar a un select case usando un diccionario """
+        d = dict()
+        # ---
+        def lineal_con_reclutamiento(lam, lamr, paramcon):
+            Et = paramcon[0]
+            Eb = paramcon[1]
+            if lam<=lamr:
+                return Et*(lam-1.)
+            else:
+                return Eb*(lamr-1.) + Et*(lam/lamr - 1.)
+        d[0] = lineal_con_reclutamiento
+        # ---
+        return d[ecucon]
 
     def get_con_sf(self, j):
         """ obtener la conectividad de una subfibra (copia de get_con_elem0)"""
         return self.je[ self.ie[j] : self.ie[j+1] ]
 
-    def calcular_long_j(self, xnods, j):
+    def calcular_long_j(self, coors, j):
         nod_ini, nod_fin = self.get_con_sf(j)
-        x_ini = xnods[nod_ini]
-        x_fin = xnods[nod_fin]
+        x_ini = coors[nod_ini]
+        x_fin = coors[nod_fin]
         dr = x_fin - x_ini
         long = np.sqrt ( np.dot(dr,dr) )
         return long
 
-    def calcular_longs0(self, xnods0):
+    def calcular_letes0(self, coors0):
         """ calcular las longitudes iniciales de todas las subfibras """
-        self.lete0 = self.calcular_longitudes(xnods0, self.lete0)
+        self.letes0 = self.calcular_letes(coors0, self.letes0)
 
-    def calcular_longitudes(self, xnods, longs=None):
-        """ calcular las longitudes de las fibras """
+    def calcular_letes(self, coors, longs=None):
+        """ calcular las longitudes de extremo a extremo (letes) de las subfibras """
         if longs is None:
             longs = np.zeros(self.num, dtype=float) # seria mejor tenerlo preadjudicado
         for jsf in range(self.num):
             nod_ini, nod_fin = self.get_con_sf(jsf)
-            x_ini = xnods[nod_ini]
-            x_fin = xnods[nod_fin]
+            x_ini = coors[nod_ini]
+            x_fin = coors[nod_fin]
             dr = x_fin - x_ini
             longs[jsf] = np.sqrt( np.dot(dr,dr) )
         return longs
 
     def calcular_tension_j(self, j, lam):
-        return self.ecuacion_constitutiva(lam, self.param_con[j])
+        return self.ecuacion_constitutiva(lam, self.lamsr[j], self.param_con[j])
 
-    def calcular_elongaciones(self, xnods):
-        longs = self.calcular_longitudes(xnods)
-        lams = longs/self.lete0
+    def calcular_elongaciones(self, coors):
+        letes = self.calcular_letes(coors)
+        lams = letes/self.letes0
         return lams
 
-    def calcular_tensiones(self, xnods):
-        lams = self.calcular_elongaciones(xnods)
+    def calcular_tensiones(self, coors):
+        tens = np.array( self.num, dtype=float)
+        lams = self.calcular_elongaciones(coors)
         tens = self.ecuacion_constitutiva(lams, self.param_con)
         return tens
 
@@ -380,7 +431,6 @@ class Iterador(object):
 
 class Malla(object):
     def __init__(self):
-        self.open = True
         self.nodos = Nodos()
         self.sfs = Subfibras() # las subfibras las conecto con los nodos que las componen
         self.psv = None
@@ -396,49 +446,155 @@ class Malla(object):
         instance.sfs = subfibras
         # para resolver el sistema uso pseudoviscosidad
         instance.psv = np.array(psv, dtype=float)
-        instance.open = False
         return instance
 
     @classmethod
-    def leer_de_archivo_malla_completa(cls, archivo, par_con_IN, ecu_con, psvis):
-        fid = open(archivo, "r")
-        # primero leo los parametros
-        target = "*parametros"
-        ierr = find_string_in_file(fid, target, True)
-        #L, dl, dtheta = (float(val) for val in fid.next().split())
-        L = float(fid.next())
-        # leo los nodos
-        target = "*coordenadas"
-        ierr = find_string_in_file(fid, target, True)
-        num_r = int(fid.next())
-        coors = list()
-        tipos = list()
-        for i in range(num_r):
-            j, t, x, y = (float(val) for val in fid.next().split())
-            tipos.append(int(t))
-            coors.append([x,y])
-        # luego los segmentos
-        target = "*segmentos"
-        ierr = find_string_in_file(fid, target, True)
-        num_s = int(fid.next())
-        segs = list()
-        for i in range(num_s):
-            j, n0, n1 = (int(val) for val in fid.next().split())
-            segs.append([n0,n1])
-        # luego las fibras
-        target = "*fibras"
-        ierr = find_string_in_file(fid, target, True)
-        num_f = int(fid.next())
-        fibs = list()
-        for i in range(num_f):
-            out = [int(val) for val in fid.next().split()]
-            j = out[0]
-            fcon = out[1:]
-            fibs.append(fcon)
-        # ---
-        # ahora puedo armar la malla simplificada:
-        # nodos interseccion y subfibras
-        # ---
+    def from_malla_completa(cls, mc, par_con_IN, ecu_con, psvis):
+        ms = cls()
+        ms.simplificar_malla_completa(mc, par_con_IN, ecu_con, psvis)
+        return ms
+
+
+    def setear_nodos(self, coors, tipos):
+        self.nodos.add_nodos(coors, tipos)
+
+    def setear_subfibras(self, conec_listoflists, locos_0, coors_0, par_con, euc_con):
+        self.sfs.asignar_conectividad(conec_listoflists)
+        self.sfs.asignar_ecuacion_constitutiva(par_con, euc_con)
+        self.sfs.cerrar(locos_0, coors_0)
+
+    def setear_pseudoviscosidad(self, psv):
+        self.psv = np.array(psv, dtype=float)
+
+    # @classmethod
+    # def leer_de_archivo_malla_completa(cls, archivo, par_con_IN, ecu_con, psvis):
+    #     fid = open(archivo, "r")
+    #     # primero leo los parametros
+    #     target = "*parametros"
+    #     ierr = find_string_in_file(fid, target, True)
+    #     #L, dl, dtheta = (float(val) for val in fid.next().split())
+    #     L = float(fid.next())
+    #     # leo los nodos
+    #     target = "*coordenadas"
+    #     ierr = find_string_in_file(fid, target, True)
+    #     num_r = int(fid.next())
+    #     coors = list()
+    #     tipos = list()
+    #     for i in range(num_r):
+    #         j, t, x, y = (float(val) for val in fid.next().split())
+    #         tipos.append(int(t))
+    #         coors.append([x,y])
+    #     # luego los segmentos
+    #     target = "*segmentos"
+    #     ierr = find_string_in_file(fid, target, True)
+    #     num_s = int(fid.next())
+    #     segs = list()
+    #     for i in range(num_s):
+    #         j, n0, n1 = (int(val) for val in fid.next().split())
+    #         segs.append([n0,n1])
+    #     # luego las fibras
+    #     target = "*fibras"
+    #     ierr = find_string_in_file(fid, target, True)
+    #     num_f = int(fid.next())
+    #     fibs = list()
+    #     for i in range(num_f):
+    #         out = [int(val) for val in fid.next().split()]
+    #         j = out[0]
+    #         fcon = out[1:]
+    #         fibs.append(fcon)
+    #     # ---
+    #     # ahora puedo armar la malla simplificada:
+    #     # nodos interseccion y subfibras
+    #     # ---
+    #     ms_nods_r = list() # coordenadas de la malla simplificada
+    #     ms_nods_t = list() # tipos de los nodos de la malla simplificada
+    #     ms_nods_n = list() # indices originales de los nodos
+    #     ms_sfbs_c = list() # conectividad de subfibras de la malla simplificada
+    #     ms_sfbs_l = list() # largo de las siguiendo el contorno de los segmentos
+    #     # recorro cada fibra:
+    #     for f in range(len(fibs)): # f es el indice de cada fibra en la malla completa
+    #         # tengo una nueva subfibra
+    #         new_sfb = [0, 0] # por ahora esta vacia
+    #         # agrego el primer nodo
+    #         s = fibs[f][0] # segmento 0 de la fibra f
+    #         n0 = segs[s][0] # nodo 0 del segmento s
+    #         ms_nods_r.append( coors[n0] )
+    #         ms_nods_t.append( tipos[n0] ) # deberia ser un 1
+    #         ms_nods_n.append( n0 )
+    #         # lo agrego a la nueva subfibra como su primer nodo
+    #         new_sfb[0] = len( ms_nods_r ) - 1 # es el ultimo nodo agregado, tambien podria hacer ms_nods_n.index(n0) que es lo mismo pero mas lento
+    #         assert ms_nods_t[-1] == 1
+    #         # recorro el resto de los nodos de la fibra para agregar los nodos intereccion
+    #         l = 0. # aca voy sumando el largo de los segmentos que componen la subfibra
+    #         for js in range(len(fibs[f])): # js es el indice de cada segmento en la fibra f (numeracion local a la fibra)
+    #             # voy viendo los nodos finales de cada segmento
+    #             s = fibs[f][js] # s es el indice de cada segmento en la malla original (numeracion global)
+    #             n0 = segs[s][0] # primer nodo del segmento
+    #             n1 = segs[s][1] # nodo final del segmento
+    #             r0 = coors[n0]
+    #             r1 = coors[n1]
+    #             dx = r1[0] - r0[0]
+    #             dy = r1[1] - r0[1]
+    #             l += np.sqrt( dx*dx + dy*dy ) # largo del segmento (lo sumo al largo de la subfibra)
+    #             if tipos[n1] in (1,2): # nodo interseccion (2) o nodo final (1)
+    #                 # tengo que fijarme si el nodo no esta ya presente
+    #                 # (ya que los nodos interseccion pertenecen a dos fibras)
+    #                 if not n1 in ms_nods_n:
+    #                     # el nodo no esta listado,
+    #                     # tengo que agregarlo a la lista de nodos
+    #                     ms_nods_r.append( coors[n1] )
+    #                     ms_nods_t.append( tipos[n1] )
+    #                     ms_nods_n.append( n1 )
+    #                 # me fijo en la nueva numeracion cual es el indice del ultimo nodo de la subfibra
+    #                 new_sfb[1] = ms_nods_n.index(n1)
+    #                 # y agrega la conectividad de la subfibra a la lista
+    #                 ms_sfbs_c.append( new_sfb )
+    #                 ms_sfbs_l.append( l )
+    #                 # si no llegue a un nodo frontera, debo empezar una nueva subfibra
+    #                 if tipos[n1] == 2:
+    #                     l = 0.
+    #                     new_sfb = [0, 0]
+    #                     new_sfb[0] = ms_nods_n.index(n1) # el primer nodo de la siguiente subfibra sera el ultimo nodo de la anterior
+    #     # # debug
+    #     # print ms_nods_n
+    #     # print ms_nods_r
+    #     # print ms_nods_t
+    #     # print ms_sfbs_c
+    #     # print ms_sfbs_l
+    #     # return ms_nods_r, ms_sfbs_c
+    #     # ---
+    #     # armo los objetos
+    #     # los nodos a partir de las coordenadas y los tipos
+    #     nodos = Nodos.from_coordenadas_y_tipos(ms_nods_r, ms_nods_t)
+    #     # las subfibras con los parmetros constitutivos para cada subfibra
+    #     # calculo el lamr por subfibra
+    #     par_con = np.zeros( (len(ms_sfbs_c), len(par_con_IN)), dtype=float )
+    #     for i in range(len(ms_sfbs_c)):
+    #         r0_i = ms_nods_r[ ms_sfbs_c[i][0] ]
+    #         r1_i = ms_nods_r[ ms_sfbs_c[i][1] ]
+    #         lete_i = calcular_longitud_de_segmento(r0_i, r1_i)
+    #         lamr_i = ms_sfbs_l[i] / lete_i
+    #         par_con_i = par_con_IN
+    #         par_con_i[2] = lamr_i
+    #         par_con[i,:] = par_con_i
+    #     sfbs = Subfibras.closed(ms_sfbs_c, ms_sfbs_l, nodos.x, par_con, ecu_con)
+    #     psv = [psvis]*nodos.num
+    #     malla = Malla.closed(nodos, sfbs, psv)
+    #     malla.L = L
+    #     return malla
+
+    def simplificar_malla_completa(self, mc, par_con_IN, ecu_con, psvis):
+        """ toma una malla completa (mc)
+        y construye una malla simplifiada
+        es necesario dar ecuacion y parametros constitutivos """
+        # obtengo lo que necesito de la malla completa
+        # recordar que en la malla completa los objetos suelen ser listas (no arrays de numpy)
+        L = mc.L
+        coors = mc.nods.r
+        tipos = mc.nods.tipos
+        segs = mc.segs.con
+        fibs = mc.fibs.con
+        # los voy a mapear a otras listas propias de la malla simplificada
         ms_nods_r = list() # coordenadas de la malla simplificada
         ms_nods_t = list() # tipos de los nodos de la malla simplificada
         ms_nods_n = list() # indices originales de los nodos
@@ -488,33 +644,20 @@ class Malla(object):
                         l = 0.
                         new_sfb = [0, 0]
                         new_sfb[0] = ms_nods_n.index(n1) # el primer nodo de la siguiente subfibra sera el ultimo nodo de la anterior
-        # # debug
-        # print ms_nods_n
-        # print ms_nods_r
-        # print ms_nods_t
-        # print ms_sfbs_c
-        # print ms_sfbs_l
-        # return ms_nods_r, ms_sfbs_c
         # ---
-        # armo los objetos
-        # los nodos a partir de las coordenadas y los tipos
-        nodos = Nodos.from_coordenadas(ms_nods_r, ms_nods_t)
-        # las subfibras con los parmetros constitutivos para cada subfibra
-        # calculo el lamr por subfibra
+        # ahora coloco las variables en mi objeto malla simplificada
+        # nodos con coordenadas y tipos
+        self.setear_nodos(ms_nods_r, ms_nods_t)
+        # subfibras con parametros constitutivos y ecuacion constitutiva
+        # ademas tengo que pasar las longitudes de contorno y las coordenadas para calcular los enrulamientos
         par_con = np.zeros( (len(ms_sfbs_c), len(par_con_IN)), dtype=float )
-        for i in range(len(ms_sfbs_c)):
-            r0_i = ms_nods_r[ ms_sfbs_c[i][0] ]
-            r1_i = ms_nods_r[ ms_sfbs_c[i][1] ]
-            lete_i = calcular_longitud_de_segmento(r0_i, r1_i)
-            lamr_i = ms_sfbs_l[i] / lete_i
-            par_con_i = par_con_IN
-            par_con_i[2] = lamr_i
-            par_con[i,:] = par_con_i
-        sfbs = Subfibras.closed(ms_sfbs_c, ms_sfbs_l, nodos.x, par_con, ecu_con)
-        psv = [psvis]*nodos.num
-        malla = Malla.closed(nodos, sfbs, psv)
-        malla.L = L
-        return malla
+        for par_con_i in par_con:
+            par_con_i[:] = par_con_IN
+        self.setear_subfibras(ms_sfbs_c, ms_sfbs_l, ms_nods_r, par_con, ecu_con)
+        # pseudoviscosidad
+        psv = [psvis] * len(ms_nods_r)
+        self.setear_pseudoviscosidad(psv)
+
 
     def guardar_en_archivo(self, archivo):
         fid = open(archivo, "w")
