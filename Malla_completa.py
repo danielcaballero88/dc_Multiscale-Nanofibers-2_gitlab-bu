@@ -363,11 +363,14 @@ class Malla(object):
         # tomo la primera fibra y me fijo si intersecta a todas las demas
         # despues la segunda fibra y me fijo si intersecta a todas menos a la primera (porque ya me fije)
         # asi sucesivamente, la ultima fibra no necesito
+        print "intersectando fibras"
         num_f = len( self.fibs.con )
         for f0 in range(num_f): # recorro todas las fibras
+            print "f0: ", f0
             fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
             num_s0 = len(fibcon0)
             for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
+                print "f1: ", f1
                 fibcon1 = self.fibs.con[f1]
                 num_s1 = len(fibcon1)
                 for j0 in range(num_s0): # recorro los segmentos de la fibra 0
@@ -484,11 +487,11 @@ class Malla(object):
         dls = list()
         dthetas = list()
         for i in range(num_f):
-            out = [int(val) for val in fid.next().split()]
-            j = out[0]
-            dl = out[1]
-            dtheta = out[2]
-            fcon = out[3:]
+            svals = fid.next().split()
+            j = int(svals[0])
+            dl = float(svals[1])
+            dtheta = float(svals[2])
+            fcon = [int(val) for val in svals[3:]]
             fibs.append(fcon)
             dls.append(dl)
             dthetas.append(dtheta)

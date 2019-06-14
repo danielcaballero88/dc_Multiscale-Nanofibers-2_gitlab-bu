@@ -1,16 +1,34 @@
 import numpy as np
-from Malla_equilibrio_2 import Malla
+from Malla_simplificada import Malla as Ms, Iterador
+from Malla_completa import Malla as Mc
 from matplotlib import pyplot as plt
 
-parcon = [0.1e9, 0.1e6, 0.0] # Et, Eb y lamr (que va a ser calculado fibra a fibra)
+parcon = [0.1e9, 0.1e6] # Et, Eb
 eccon = 0 # lineal con reclutamiento
-pseudovisc = 0.1e11
-m = Malla.leer_de_archivo_malla_completa("Malla.txt", parcon, eccon, pseudovisc)
+pseudovisc = 0.2e7
 
-m.guardar_en_archivo("Malla_simplificada.txt")
+mc = Mc.leer_de_archivo("Malla.txt")
 
-# m.graficar0()
+ms = Ms()
+ms.simplificar_malla_completa(mc, parcon, eccon, pseudovisc)
 
+ms.guardar_en_archivo("Malla_simplificada.txt")
+
+
+# iterador
+n_sis = ms.nodos.num # numero de variables a resolver (en este caso son arrays de len 2: x e y)
+semilla = ms.nodos.x0
+sistema = ms
+ref_grande = ms.L * 1.0e-1
+ref_divergente = 0.95
+max_iters = 1000
+tolerancia = ms.L*1.0e-16
+ref_pequeno = tolerancia
+ite = Iterador(n_sis, sistema, ref_pequeno, ref_grande, ref_divergente, max_iters, tolerancia)
+# ---
+
+
+# deformacion
 F = np.array(
     [
         [1.1, 0.0],
@@ -19,32 +37,23 @@ F = np.array(
     dtype=float
 )
 
-m.mover_nodos_frontera(F)
-dx = m.calcular_incremento()
-m.set_x(m.nodos.x+dx)
 
-print dx
-print m.nodos.x0
-print m.nodos.x
+# ms.deformar_afin_frontera(F)
 
-m.graficar(F)
+# x = ite.iterar()
+# ms.set_x(x)
 
-# coors = m.nodos.x
-# subfibs = m.sfs
-# # grafico las subfibras
-# fig = plt.figure()
-# ax = fig.add_subplot(111)
-# for i in range(subfibs.num):
-#     xx = list() # valores x
-#     yy = list() # valores y
-#     # son dos nodos por subfibra
-#     # n0 = subfibs[i][0]
-#     # n1 = subfibs[i][1]
-#     n0, n1 = subfibs.get_con_sf(i)
-#     r0 = coors[n0]
-#     r1 = coors[n1]
-#     xx = [r0[0], r1[0]]
-#     yy = [r0[1], r1[1]]
-#     p = ax.plot(xx, yy, label=str(i))
-# ax.legend(loc="upper left", numpoints=1, prop={"size":6})
-# plt.show()
+print "---"
+
+F[1,1] = 1.5
+ms.deformar_afin_frontera(F)
+
+ms.psv = ms.psv / 100.
+x = ite.iterar()
+ms.set_x(x)
+
+trac_sfs = ms.calcular_tracciones_de_subfibras()
+trac_nods = ms.calcular_tracciones_sobre_nodos(trac_sfs)
+print trac_nods
+
+ms.graficar(F)
