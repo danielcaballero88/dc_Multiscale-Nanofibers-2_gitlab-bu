@@ -12,7 +12,7 @@ Los nodos tienen coordenadas y tipo (0=continuacion, 1=frontera, 2=interseccion)
 
 import numpy as np
 from matplotlib import pyplot as plt
-import collections
+# import collections
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
 
@@ -174,15 +174,19 @@ class Fibras(object):
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
         self.capas = TypedLists.Lista_de_enteros()
+        self.dls = TypedLists.Lista_de_floats()
+        self.dthetas = TypedLists.Lista_de_floats()
 
     def add_seg_a_fibra(self, j, seg):
         # agrego seg
         assert isinstance(seg, int)
         self.con[j].append(seg)
 
-    def nueva_fibra_vacia(self, capa):
+    def nueva_fibra_vacia(self, dl, dtheta, capa):
         # agrego una nueva fibra, vacia por ahora
         self.con.append( list() )
+        self.dls.append(dl)
+        self.dthetas.append(dtheta)
         self.capas.append(capa)
 
     def add_seg_a_fibra_actual(self, seg):
@@ -192,8 +196,10 @@ class Fibras(object):
         assert n>=1
         self.con[n-1].append(seg)
 
-    def add_fibra(self, fib_con, capa):
+    def add_fibra(self, fib_con, dl, dtheta, capa):
         self.con.append(fib_con)
+        self.dls.append(dl)
+        self.dthetas.append(dtheta)
         self.capas.append(capa)
 
     def insertar_segmento(self, j, k, s):
@@ -290,7 +296,7 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
-        self.fibs.add_fibra(f_con, capa)
+        self.fibs.add_fibra(f_con, dl, dtheta, capa)
 
 
     def get_punto_sobre_frontera(self):
@@ -360,15 +366,18 @@ class Malla(object):
         # tomo la primera fibra y me fijo si intersecta a todas las demas
         # despues la segunda fibra y me fijo si intersecta a todas menos a la primera (porque ya me fije)
         # asi sucesivamente, la ultima fibra no necesito
+        print "intersectando fibras"
         num_f = len( self.fibs.con )
         for f0 in range(num_f): # recorro todas las fibras
+            print "f0: ", f0
             capa0 = self.fibs.capas[f0]
             fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
             num_s0 = len(fibcon0)
             for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
+                print "f1: ", f1
                 capa1 = self.fibs.capas[f1]
-                if not capa1 in (capa0-1, capa0, capa0+1): # solo las fibras de capas adyacentes pueden tocarse
-                    continue # paso a la siguiente fibra, esta no intersecta con f0
+                if not capa1 in (capa0-1, capa0, capa0+1):
+                    continue # paso a la sigueinte fibra, este no interseca con f0 por estar en capas alejadas
                 fibcon1 = self.fibs.con[f1]
                 num_s1 = len(fibcon1)
                 for j0 in range(num_s0): # recorro los segmentos de la fibra 0
@@ -439,13 +448,14 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # termino con las fibras: indice, capa y segmentos
+        # termino con las fibras: indice, dl, dtheta, capa y segmentos
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f in range( len(self.fibs.con) ):
             nsegs = len(self.fibs.con[f])
             dString = "{:6d}".format(f) # indice
             dString += "{:6d}".format(self.fibs.capas[f]) # capa
+            dString += "{:17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.dthetas[f]) # dl y dtheta
             dString += "".join( "{:6d}".format(val) for val in self.fibs.con[f] ) + "\n" # conectividad
             fid.write(dString)
         # ---
@@ -482,13 +492,19 @@ class Malla(object):
         ierr = find_string_in_file(fid, target, True)
         num_f = int(fid.next())
         fibs = list()
+        dls = list()
+        dthetas = list()
         capas = list()
         for i in range(num_f):
-            out = [int(val) for val in fid.next().split()]
-            j = out[0]
-            capa = out[1]
-            fcon = out[2:]
+            svals = fid.next().split()
+            j = int(svals[0])
+            dl = float(svals[1])
+            dtheta = float(svals[2])
+            capa = int(svals[3])
+            fcon = [int(val) for val in svals[4:]]
             fibs.append(fcon)
+            dls.append(dl)
+            dthetas.append(dtheta)
             capas.append(capa)
         # ahora que tengo todo armo el objeto
         malla = cls(L)
@@ -502,8 +518,10 @@ class Malla(object):
         # le asigno las fibras
         for i in range(num_f):
             f_con = fibs[i]
+            dl = dls[i]
+            dtheta = dthetas[i]
             capa = capas[i]
-            malla.fibs.add_fibra(f_con, capa)
+            malla.fibs.add_fibra(f_con, dl, dtheta, capa)
         # listo
         return malla
 
