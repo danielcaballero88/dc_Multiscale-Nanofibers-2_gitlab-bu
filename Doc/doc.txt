@@ -1,0 +1,93 @@
+Generacion del rve:
+El modulo Malla_completa posee un objeto Malla con la capacidad de generar, mediante random walks, mallas.
+Cada malla es un conjunto de fibras (un rve) con intersecciones entre ellas.
+El rve es una superposición de capas de nanofibras.
+Cada capa es 2d y está delimitada por un cuadrado imaginario de lado L.
+Los nodos iniciales y finales de cada fibra de la malla corresponden a la frontera real del rve.
+Se ubican sobre los lados del cuadrado imaginario.
+Vamos a ver por partes cómo se realiza esta construcción geométrica.
+
+Generación de una fibra:
+Cada fibra se va construyendo mediante random walk, es decir, que se van concatenando segmentos.
+Se comienza con un segmento de longitud dl, ubicado aleatoriamente en el rve y con orientación segun una distribución de probabilidad.
+A partir de ahi la fibra crece en los dos sentidos concatenando segmentos de longitud dl.
+Cada segmento nuevo tiene una orientación igual a la del segmento del cual crece, pero con una posible variación dtheta.
+Esa posible variación está dada por una distribución de probabilidad que determina el nivel de enrulamiento (se amplía luego).
+Cuando la fibra, creciendo así, llega hasta el borde imaginario, se termina.
+Es decir, no crece más y se recorta sobre los bordes imaginarios obteniendo así los nodos frontera de la fibra.
+El resto de los nodos son nodos interiores al dominio del rve.
+
+Curvatura:
+Resulta importante relacionar los parámetros que determinan el random walk con el resultado en enrulamiento.
+Una fibra que no presenta variación en orientación en su camino (dtheta=0 entre segmentos) tendrá lamr=1 (enrulamiento 0).
+Por el contrario, al incrementar el valor de dtheta con el que pueden variar los segmentos, aumenta la curvatura.
+Por lo tanto la longitud de contorno de la fibra se vuelve mayor que la longitud extremo-extremo.
+Se deduce que aumentando la variabilidad de la orientación del random walk, se aumentará el enrulamiento de las fibras.
+Esto es sensible de ser medido en los rve construidos y es un buen objeto de analisis.
+La naturaleza probabilística hará que se necesite un número alto de fibras en cada rve para que expresen una respuesta similar.
+Es decir, para que sean realmente estadísticamente representativos.
+
+Generación de una capa:
+La naturaleza por capas del material electrohilado se puede aproximar como una superposición de capas de nanofibras.
+Cada capa posee un número de nanofibras que se va a determinar en función de la porosidad del material (se amplía luego).
+Se asume que las nanofibras pertenecientes a una capa se encuentran en un mismo nivel (misma coordenada ortogonal a la capa).
+Por lo tanto, los puntos donde las nanofibras se cruzan se consideran puntos de unión donde las nanofibras están soldadas.
+Es decir que se coloca un nodo intersección en el cruce entre las fibras que será compartido por ambas.
+
+Generación de la malla:
+Se van a generar un número de capas, y es lógico pensar que las capas adyacentes entre sí permitan el contacto de nanofibras.
+Este contacto se puede modelar como un punto de unión o como un punto de contacto deslizante con fricción.
+Por lo pronto es un punto de unión.
+En este modelo las capas se construyen de manera independiente entre sí y cada una se encuentra en una coordenada normal diferente.
+Esto implica que la distancia entre capas equivale a un diametro de fibras, suponiendo fibras de diametros iguales.
+Para estimar el número de nanofibras por capa se debe tener en cuenta la porosidad.
+Cada capa tendrá una porosidad equivalente al espacio vacío dividido por el espacio ocupado por nanofibras.
+Para respetar un valor de porosidad del material, se deben colocar un número de capas que permita ajustar bien ese valor.
+Por lo tanto, mientras más grande sea el rve, más grande será el número de fibras por capa.
+
+---
+
+Equilibrio mecánico:
+
+El problema microscópico necesita restricciones cinemáticas para ser resuelto.
+Las restricciones pueden ser de varios tipos: mínimas, periódicas en la frontera, afínes en la frontera, entre otros.
+Suponiendo restricciones afines en la frontera, los nodos frontera se mueven según la deformación afín (x = F x0).
+Luego el resto de los nodos de la malla se deben mover resolviendo el equilibrio mecánico.
+Esto puede encararse de varias maneras de creciente complejidad.
+
+1) Se divide cada fibra en subfibras entre los nodos de la misma que sean nodos frontera o nodos intersección.
+Cada subfibra se modela como un elemento simplificado con una respuesta bilineal tal cual se hace en Caballero et. al.
+Esto asume que cada subfibra posee una pequeña resistencia flexural respecto de su resistencia al estiramiento axial.
+Además supone que es despreciable la capacidad de trasmitir cuplas en sus nodos extremales.
+Por lo tanto cada subfibra ejerce una tracción sobre los nodos extremales.
+Esta tracción es colineal con la linea extremo-extremo de la subfibra y se calcula según el cambio de longitud extremo-extremo de la misma.
+Finalmente la solución es la que implica el equilibrio sobre cada nodo intersección, es decir, sumatoria de fuerzas igual a cero.
+
+2) Se modela cada fibra como una vara de Cosserat (ver Carleton et. al.).
+Es decir, cada fibra es un elemento mecánico continuo, modelado según su lina media en un elemento 1D.
+Los segmentos describen una discretización en elementos finitos de la fibra original.
+En los puntos de intersección se agregan fuerzas externas a cada fibra, según el tipo de restricción que se haya impuesto (unión, deslizamiento, etc.).
+El comportamiento final será muy similar al establecido en el modelo más sencillo.
+Cada fibra tendrá una pequeña resistencia flexural y una resistencia mucho mayor al estiramiento axial.
+Sin embargo esta cinemática permite restringir la orientación de la fibra en los puntos frontera y en los puntos de intersección.
+Por lo tanto es capaz de transmitir momentos en los mismos, aunque es de esperar que sean despreciables o casi para la solución.
+
+---
+
+Algoritmo para resolver:
+
+caso 1) Se mueven los nodos frontera según la deformación afín y se establecen como nodos de dirichlet.
+Se necesita un valor semilla de solución, un buen punto de partida puede ser la solución afín en el dominio.
+A partir de allí, se calcula la tensión que ejerce cada subfibra, y sus orientaciones.
+Sobre cada nodo intersección, se calcula la tracción resultante (o fuerza resultante, R, si las fibras poseen diámetros diferentes).
+La idea es aplicar entonces un algoritmo de quasi-Newton.
+Se le asigna a cada nodo un valor de pseudo-viscosidad (c) en iteraciones.
+De esta manera el avance de los nodos se da según la matriz tangente de las fuerzas pero con amortiguación.
+La amortiguación se calcula para que el desplazamiento inicial sea un valor relativamente pequeño con respecto al rve.
+Un valor del 5% del lado del rve se considera suficiente.
+En iteraciones subsiguientes, se desea que cada desplazamiento sea menor al de la iteración anterior.
+Para eso se incrementa adaptativamente la pseudoviscosidad para obtener desplazamientos monótonamente decrecientes en iteraciones.
+Cuando se obtiene que el valor de desplazamiento máximo, sin tener en cuenta pseudoviscosidad, cae por debajo de la tolerancia, se obtiene la solución.
+
+
+
