@@ -527,13 +527,12 @@ class Malla(object):
 
     def pre_graficar_bordes(self):
         # seteo
-        if not self.pregraficado:
-            self.fig = plt.figure()
-            self.ax = self.fig.add_subplot(111)
-            margen = 0.1*self.L
-            self.ax.set_xlim(left=0-margen, right=self.L+margen)
-            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
-            self.pregraficado = True
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111)
+        margen = 0.1*self.L
+        self.ax.set_xlim(left=0-margen, right=self.L+margen)
+        self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
+        self.pregraficado = True
         # dibujo los bordes del rve
         fron = []
         fron.append( [[0,self.L], [0,0]] )
@@ -549,14 +548,6 @@ class Malla(object):
     def pre_graficar_fibras(self):
         nc = np.max(self.fibs.capas) + 1
         colores = plt.cm.rainbow(np.linspace(0,1,nc))
-        # seteo
-        if not self.pregraficado:
-            self.fig = plt.figure()
-            self.ax = self.fig.add_subplot(111)
-            margen = 0.1*self.L
-            self.ax.set_xlim(left=0-margen, right=self.L+margen)
-            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
-            self.pregraficado = True
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx_fibs = [ list() for f in  self.fibs.con ]
@@ -576,17 +567,9 @@ class Malla(object):
                 r = self.nods.r[n]
                 xx_fibs[f].append(r[0])
                 yy_fibs[f].append(r[1])
-            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker=".", label=str(f), color=colores[self.fibs.capas[f]]) )
+            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker="", label=str(f), color=colores[self.fibs.capas[f]]) )
 
     def pre_graficar_nodos_frontera(self):
-        # seteo
-        if not self.pregraficado:
-            self.fig = plt.figure()
-            self.ax = self.fig.add_subplot(111)
-            margen = 0.1*self.L
-            self.ax.set_xlim(left=0-margen, right=self.L+margen)
-            self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
-            self.pregraficado = True
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -606,10 +589,23 @@ class Malla(object):
             yy[f].append(r[1])
             grafs.append( self.ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k") )
 
+    def pre_graficar_nodos_interseccion(self):
+        # dibujo las fibras (los segmentos)
+        # preparo las listas, una lista para cada fibra
+        xx = list()
+        yy = list()
+        grafs = list() # un plot para cada fibra
+        for n in range(len(self.nods.r)):
+            if self.nods.tipos[n] == 2:
+                xx.append(self.nods.r[n][0])
+                yy.append(self.nods.r[n][1])
+        self.ax.plot(xx, yy, linewidth=0, marker="s", mec="k")
+
     def graficar(self):
         if not self.pregraficado:
             self.pre_graficar_bordes()
             self.pre_graficar_nodos_frontera()
+            self.pre_graficar_nodos_interseccion()
             self.pre_graficar_fibras()
         self.ax.legend(loc="upper left", numpoints=1, prop={"size":6})
         plt.show()
