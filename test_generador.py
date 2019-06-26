@@ -9,8 +9,8 @@ L = 1.0
 m = Mc(L)
 
 start = time.clock()
-for i in range(10):
-    m.make_capa(0.05*L, pi*0.1, 10)
+for i in range(1):
+    m.make_capa(0.05*L, pi*0.1, 50)
 print time.clock() - start
 
 # for i in range(10): # capas

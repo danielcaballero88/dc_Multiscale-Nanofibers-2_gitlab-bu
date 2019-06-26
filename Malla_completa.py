@@ -573,8 +573,8 @@ class Malla(object):
                 r0 = self.nods.r[n0]
                 r1 = self.nods.r[n1]
                 loco += calcular_longitud_de_segmento(r0, r1)
-            n_ini = fcon[0][0]
-            n_fin = fcon[-1][1]
+            n_ini = self.segs.con[fcon[0]][0]
+            n_fin = self.segs.con[fcon[-1]][1]
             r_ini = self.nods.r[n_ini]
             r_fin = self.nods.r[n_fin]
             lete = calcular_longitud_de_segmento(r_ini, r_fin)
@@ -593,9 +593,10 @@ class Malla(object):
         delta = (lamr_max - lamr_min) / n
         frec = list()
         for i in range(n):
-            lam_ini = n*delta
-            lam_fin = lam_ini + delta
-            frec_i = np.sum( lam_ini < lamsr < lam_fin )
+            lamr_ini = lamr_min + i*delta
+            lamr_fin = lamr_ini + delta
+            mask = np.logical_and( lamr_ini <= lamsr, lamsr < lamr_fin )
+            frec_i = np.sum( mask )
             frec.append(frec_i)
         return frec
 
