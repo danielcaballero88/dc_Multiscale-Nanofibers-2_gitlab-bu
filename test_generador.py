@@ -8,7 +8,7 @@ L = 1.0
 m = Mc(L)
 
 for i in range(10): # capas
-    for j in range(10): # fibras
+    for j in range(5): # fibras
         m.make_fibra(0.05*L, pi*0.1, capa=i)
         m.trim_fibra_at_frontera(m.fibs.con[-1])
 

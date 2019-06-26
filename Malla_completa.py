@@ -15,29 +15,36 @@ from matplotlib import pyplot as plt
 # import collections
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
+from Aux import calcular_longitud_de_segmento as calcular_lete
+from Aux import calcular_longitud_y_angulo_de_segmento as calcular_long_y_ang
+from Aux import Conectividad
 
 
 class Nodos(object):
     def __init__(self):
-        self.r = TypedLists.Lista_de_listas_de_dos_floats()  # coordenadas de los nodos
-        self.tipos = TypedLists.Lista_de_algunos_enteros((0,1,2)) # lista de tipos (0=cont, 1=fron, 2=inter)
+        self.n = 0
+        self.r = np.zeros( (0,2), dtype=float )
+        self.tipos = np.zeros( 0, dtype=int )
 
     def add_nodo(self, r_nodo, tipo):
-        self.r.append(r_nodo)
-        self.tipos.append(tipo)
+        self.n += 1
+        self.r = np.append(self.r, r_nodo, axis=0)
+        self.tipos = np.append(self.tipos, tipo)
+
+    def add_nodos(self, n_nodos, r_nodos, tipos):
+        self.n += n_nodos
+        self.r = np.append(self.r, r_nodos, axis=0)
+        self.tipos = np.append(self.tipos, tipos)
 
     def __len__(self):
-        if not len(self.r) == len(self.tipos):
-            raise ValueError, "longitudes de coordenadas y tipos no concuerdan"
-        else:
-            return len(self.r)
+        return self.n
 
 
 class Segmentos(object):
     def __init__(self):
-        self.con = TypedLists.Lista_de_listas_de_dos_enteros() # lista de listas de dos nodos (indices)
-        self.thetas = TypedLists.Lista_de_floats()
-        self.longs = TypedLists.Lista_de_floats()
+        self.con = np.zeros( (0,2), dtype=int ) # lista de a dos nodos
+        self.thetas = np.zeros( 0, dtype=float )
+        self.longs = np.zeros( 0, dtype=float )
 
     def add_segmento(self, seg_con, coors):
         """
@@ -46,125 +53,90 @@ class Segmentos(object):
         coors son las coordenadas (lista de listas de a dos floats) de todos los nodos
         (con todos los nodos hasta el momento de crear este segmento esta bien,
         alcanza con que esten presentes en la lista los dos nodos de seg_con) """
-        self.con.append(seg_con)
-        longitud, angulo = self.calcular_long_y_theta(seg_con, coors)
-        self.thetas.append(angulo)
-        self.longs.append(longitud)
+        self.con = np.append(self.con, seg_con, axis=0)
+        r0, r1 = coors[seg_con, :]
+        long, ang = calcular_long_y_ang(r0, r1)
+        self.thetas = np.append(self.thetas, ang)
+        self.longs = np.append(self.longs, long)
 
-    def actualizar_segmento(self, j, coors):
-        """ en caso de que se mueva un nodo y haya que actualizar theta y longitud """
-        long, ang = self.calcular_long_y_theta(self.con[j], coors)
+    def add_segmentos(self, segs_con, coors):
+        self.con = np.append(self.con, segs_con, axis=0)
+        longs = list()
+        thetas = list()
+        for seg_con in segs_con:
+            r0, r1 = coors[seg_con, :]
+            long, ang = calcular_long_y_ang(r0, r1)
+            longs.append(long)
+            thetas.append(ang)
+        self.thetas = np.append(self.thetas, thetas)
+        self.longs = np.append(self.longs, longs)
+
+    def get_con_seg(self, j):
+        """ get conectividad de un segmento segun el indice """
+        return self.con[j] # devuelve la fila j
+
+    def set_con_seg(self, j, new_con):
+        self.con[j,:] = new_con
+
+    def upd_seg(self, j, coors):
+        """ update segmento j:
+        en caso de que se mueva un nodo y haya que actualizar theta y longitud """
+        seg_con = self.get_con_seg(j)
+        r0, r1 = coors[seg_con, :]
+        long, ang = calcular_long_y_ang(r0, r1)
         self.thetas[j] = ang
         self.longs[j] = long
 
     def mover_nodo(self, j, n, coors, new_r):
         """ mueve un nodo del segmento
-        coors es una lista, es un objeto mutable
-        por lo que al salir de este metodo se va ver modificada
+        coors es un array de numpy, es un objeto mutable
+        por lo que al salir de este metodo se va ver modificado
         es decir, es un puntero
         j es el indice del segmento a moverle un nodo
         n es el indice del nodo para el segmento: 0 es inicial, 1 es final """
-        assert n in (0,1)
-        nglobal = self.con[j][n]
+        nglobal = self.get_con_seg(j)[n]
         coors[nglobal] = new_r # se lo modifica resida donde resida (normalmente en un objeto nodos)
-        self.actualizar_segmento(j, coors)
+        self.upd_seg(j, coors)
 
-    def cambiar_conectividad(self, j, new_con, coors):
+    def cambiar_conectividad_seg_j(self, j, new_con, coors):
         """ se modifica la conectividad de un segmento (j) de la lista
         se le da la nueva conectividad new_con
         y por lo tanto se vuelve a calcular su angulo y longitud
         (util para dividir segmentos en 2) """
-        self.con[j] = new_con
-        longitud, angulo = self.calcular_long_y_theta(new_con, coors)
-        self.thetas[j] = angulo
-        self.longs[j] = longitud
-
-    @staticmethod
-    def calcular_long_y_theta(seg, coors):
-        n0 = seg[0]
-        n1 = seg[1]
-        dx = coors[n1][0] - coors[n0][0]
-        dy = coors[n1][1] - coors[n0][1]
-        long = np.sqrt( dx*dx + dy*dy )
-        # ahora theta
-        if iguales(dx,0.0):
-            # segmento vertical
-            if iguales(dy,0.0,1.0e-12):
-                raise ValueError("Error, segmento de longitud nula!!")
-            elif dy>0:
-                theta = np.pi*.5
-            else:
-                theta = -np.pi*.5
-        elif iguales(dy,0):
-            # segmento horizontal
-            if dx>0:
-                theta = 0.0
-            else:
-                theta = np.pi
-        else:
-            # segmento oblicuo
-            if dx<0:
-                # segundo o tercer cuadrante
-                theta = np.pi + np.arctan(dy/dx)
-            elif dy>0:
-                # primer cuadrante (dx>0)
-                theta = np.arctan(dy/dx)
-            else:
-                # dx>0 and dy<0
-                # cuarto cuadrante
-                theta = 2.0*np.pi + np.arctan(dy/dx)
-        return long, theta
+        self.set_con_seg(j, new_con)
+        r0, r1 = coors[new_con, :]
+        long, ang = calcular_long_y_ang(r0, r1)
+        self.thetas[j] = ang
+        self.longs[j] = long
 
     def get_right(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        x0 = coors[n0][0]
-        x1 = coors[n1][0]
-        return np.maximum(x0,x1)
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return np.maximum(r0[0],r1[0])
 
     def get_left(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        x0 = coors[n0][0]
-        x1 = coors[n1][0]
-        return np.minimum(x0,x1)
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return np.minimum(r0[0],r1[0])
 
     def get_top(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        y0 = coors[n0][1]
-        y1 = coors[n1][1]
-        return np.maximum(y0,y1)
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return np.maximum(r0[1],r1[1])
 
     def get_bottom(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        y0 = coors[n0][1]
-        y1 = coors[n1][1]
-        return np.minimum(y0,y1)
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return np.minimum(r0[1],r1[1])
 
     def get_dx(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        x0 = coors[n0][0]
-        x1 = coors[n1][0]
-        return x1-x0
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return r1[0]-r0[0]
 
     def get_dy(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        y0 = coors[n0][1]
-        y1 = coors[n1][1]
-        return y1-y0
+        r0, r1 = coors[self.get_con_seg(j), :]
+        return r1[1]-r1[0]
 
     def get_dx_dy_brtl(self, j, coors):
-        n0 = self.con[j][0]
-        n1 = self.con[j][1]
-        x0 = coors[n0][0]
-        y0 = coors[n0][1]
-        x1 = coors[n1][0]
-        y1 = coors[n1][1]
-        return x1-x0, y1-y0, np.minimum(y0,y1), np.maximum(x0,x1), np.maximum(y0,y1), np.minimum(x0,x1)
+        r0, r1 = coors[self.get_con_seg(j), :]
+        dx, dy = r1 - r0
+        return dx, dy, np.minimum(r0[1],r1[1]), np.maximum(r0[0],r1[0]), np.maximum(r0[1],r1[1]), np.minimum(r0[0],r1[0])
 
 
 class Fibras(object):
@@ -172,42 +144,45 @@ class Fibras(object):
     tiene un atributo con (conectividad) que es una lista
     pero la propia instancia se comporta como la lista """
     def __init__(self):
-        self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
-        self.capas = TypedLists.Lista_de_enteros()
-        self.dls = TypedLists.Lista_de_floats()
-        self.dthetas = TypedLists.Lista_de_floats()
+        self.n = 0
+        self.con = Conectividad()
+        self.capas = np.array( 0, dtype=int )
+        self.dls = np.array( 0, dtype=float )
+        self.dthetas = np.array( 0, dtype=float )
 
-    def add_seg_a_fibra(self, j, seg):
-        # agrego seg
-        assert isinstance(seg, int)
-        self.con[j].append(seg)
-
-    def nueva_fibra_vacia(self, dl, dtheta, capa):
-        # agrego una nueva fibra, vacia por ahora
-        self.con.append( list() )
-        self.dls.append(dl)
-        self.dthetas.append(dtheta)
-        self.capas.append(capa)
-
-    def add_seg_a_fibra_actual(self, seg):
-        # argrego seg a la ultima fibra
-        assert isinstance(seg, int)
-        n = len(self.con)
-        assert n>=1
-        self.con[n-1].append(seg)
+    def set_fibras(self, fibs_con, dls, dthetas, capas):
+        self.n = len(fibs_con)
+        self.con = Conectividad()
+        self.con.set_conec_listoflists(fibs_con)
+        self.dls = np.array( dls, dtype=float )
+        self.dthetas = np.array( dthetas, dtype=float )
+        self.capas = np.array( capas, dtype=int )
 
     def add_fibra(self, fib_con, dl, dtheta, capa):
-        self.con.append(fib_con)
-        self.dls.append(dl)
-        self.dthetas.append(dtheta)
-        self.capas.append(capa)
+        self.con.add_elem0(fib_con)
+        self.dls = np.append(self.dls, dl)
+        self.dthetas = np.append(self.dthetas, dtheta)
+        self.capas = np.append(self.capas, capa)
 
-    def insertar_segmento(self, j, k, s):
+    def add_fibras(self, fibs_con, dls, dthetas, capas):
+        self.con.add_elems0(fibs_con)
+        self.dls = np.append(self.dls, dls)
+        self.dthetas = np.append(self.dthetas, dthetas)
+        self.capas = np.append(self.capas, capas)
+
+    def add_seg_a_fibra(self, j, seg):
+        """
+        agrego seg a la conectividad de la fibra j
+        seg debe ser un entero (indice del segmento)
+        """
+        self.con.add_elem1_to_elem0(j, seg)
+
+    def insertar_segmento_en_fibra(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
         j: indice de la fibra
         k: indice donde se inserta el nuevo segmento
         s: indice del nuevo segmento para agregar a la conectividad """
-        self.con[j].insert(k,s)
+        self.con.insert_elem1_in_elem0(j,k,s)
 
 
 class Malla(object):
@@ -374,7 +349,7 @@ class Malla(object):
             fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
             num_s0 = len(fibcon0)
             for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
-                print "f1: ", f1
+                print f1,
                 capa1 = self.fibs.capas[f1]
                 if not capa1 in (capa0-1, capa0, capa0+1):
                     continue # paso a la sigueinte fibra, este no interseca con f0 por estar en capas alejadas
@@ -409,17 +384,43 @@ class Malla(object):
                                 subseg_j1_1 = [new_node_index , n_j1_1]
                                 # para cada segmento, cambio la conectividad de la primera mitad
                                 # y agrego la segunda mitad a la lista como un nuevo segmento
-                                self.segs.cambiar_conectividad(s0, subseg_j0_0, self.nods.r)
-                                self.segs.cambiar_conectividad(s1, subseg_j1_0, self.nods.r)
+                                self.segs.cambiar_conectividad_seg_j(s0, subseg_j0_0, self.nods.r)
+                                self.segs.cambiar_conectividad_seg_j(s1, subseg_j1_0, self.nods.r)
                                 self.segs.add_segmento(subseg_j0_1, self.nods.r)
                                 self.segs.add_segmento(subseg_j1_1, self.nods.r)
                                 # ahora debo cambiar la conectividad de las fibra
                                 # insertando un segmento en cada fibra en la posicion correcta
                                 index_newseg_f0 = len( self.segs.con ) - 2 # indice del nuevo segmento de la fibra f0 (subseg_j0_1)
                                 index_newseg_f1 = len( self.segs.con ) - 1 # indice del nuevo segmento de la fibra i1 (subseg_j1_1)
-                                self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
-                                self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
+                                self.fibs.insertar_segmento_en_fibra(f0, j0+1, index_newseg_f0)
+                                self.fibs.insertar_segmento_en_fibra(f1, j1+1, index_newseg_f1)
+            print ""
 
+    def calcular_enrulamientos(self):
+        lamsr = list()
+        for f in range(len(self.fibs.con)):
+            # tengo que calcular la longitud de contorno (loco) y la longitud extremo-extremo (lete)
+            n_ini = self.segs.con[self.fibs.con[f][0]][0]
+            n_fin = self.segs.con[self.fibs.con[f][-1]][1]
+            r_ini = self.nods.r[n_ini]
+            r_fin = self.nods.r[n_fin]
+            lete = calcular_lete(r_ini, r_fin)
+            # para la loco recorro los segmentos
+            loco = 0.
+            for sf in range(len(self.fibs.con[f])):
+                s = self.fibs.con[f][sf]
+                n_ini = self.segs.con[sf][0]
+                n_fin = self.segs.con[sf][1]
+                r_ini = self.nods.r[n_ini]
+                r_fin = self.nods.r[n_fin]
+                loco += calcular_lete(r_ini, r_fin)
+            # finalmente calculo el valor de enrulamiento
+            lamsr.append( lete / loco )
+
+    def calcular_distribucion_de_enrulamientos(self, n=10):
+        """ se calcula una distribucion discreta
+        para eso divido el rango de enrulamientos en n intervalos """
+        raise NotImplementedError
 
     def guardar_en_archivo(self, archivo="Malla.txt"):
         fid = open(archivo, "w")
