@@ -27,6 +27,9 @@ class Nodos(object):
         self.r.append(r_nodo)
         self.tipos.append(tipo)
 
+    def get_r(self, i_nodo):
+        return self.r[i_nodo]
+
     def __len__(self):
         if not len(self.r) == len(self.tipos):
             raise ValueError, "longitudes de coordenadas y tipos no concuerdan"
@@ -174,21 +177,24 @@ class Fibras(object):
     pero la propia instancia se comporta como la lista """
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
-        self.capas = TypedLists.Lista_de_enteros()
         self.dls = TypedLists.Lista_de_floats()
         self.dthetas = TypedLists.Lista_de_floats()
+
+    def add_fibra(self, fib_con, dl, dtheta):
+        self.con.append(fib_con)
+        self.dls.append(dl)
+        self.dthetas.append(dtheta)
 
     def add_seg_a_fibra(self, j, seg):
         # agrego seg
         assert isinstance(seg, int)
         self.con[j].append(seg)
 
-    def nueva_fibra_vacia(self, dl, dtheta, capa):
+    def nueva_fibra_vacia(self, dl, dtheta):
         # agrego una nueva fibra, vacia por ahora
         self.con.append( list() )
         self.dls.append(dl)
         self.dthetas.append(dtheta)
-        self.capas.append(capa)
 
     def add_seg_a_fibra_actual(self, seg):
         # argrego seg a la ultima fibra
@@ -197,12 +203,6 @@ class Fibras(object):
         assert n>=1
         self.con[n-1].append(seg)
 
-    def add_fibra(self, fib_con, dl, dtheta, capa):
-        self.con.append(fib_con)
-        self.dls.append(dl)
-        self.dthetas.append(dtheta)
-        self.capas.append(capa)
-
     def insertar_segmento(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
         j: indice de la fibra
@@ -210,10 +210,23 @@ class Fibras(object):
         s: indice del nuevo segmento para agregar a la conectividad """
         self.con[j].insert(k,s)
 
+class Capas(object):
+    """ es como una lista de fibras que compone cada capa """
+    def __init__(self):
+        self.con = TypedLists.Lista_de_listas_de_enteros()
+
+    def add_capa(self, cap_con):
+        self.con.append(cap_con)
+
+    def add_fibra_a_capa(self, capa, fibra):
+        """ capa y fibra son los indices """
+        self.con[capa].append[fibra]
+
 
 class Malla(object):
     def __init__(self, L):
         self.L = L
+        self.caps = Capas() # lista vacia
         self.fibs = Fibras() # lista vacia
         self.segs = Segmentos() # lista vacia
         self.nods = Nodos() # tiene dos listas vacias
@@ -236,8 +249,19 @@ class Malla(object):
         self.bordes_s.add_segmento([2,3], self.bordes_n.r)
         self.bordes_s.add_segmento([3,0], self.bordes_n.r)
 
+    def make_capa(self, dl, dtheta, nfibs):
+        """
+        armo una capa con nfibs fibras, todas van a armarse con los
+        mismos parmetros dl y dtheta (se debe modificar para usar distribuciones)
+        """
+        ncapas = len(self.caps.con)
+        capa_con = list()
+        for i in range(nfibs):
+            j = self.make_fibra(dl, dtheta)
+            capa_con.append(j)
+        self.caps.add_capa(capa_con)
 
-    def make_fibra(self, dl, dtheta, capa):
+    def make_fibra(self, dl, dtheta):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -280,6 +304,7 @@ class Malla(object):
             # si el nodo anterior ha caido fuera del rve ya esta la fibra
             if self.check_fuera_del_RVE(self.nods.r[-1]):
                 self.nods.tipos[-1] = 1
+                self.trim_fibra_at_frontera(f_con)
                 break
             # de lo contrario armo un nuevo segmento a partir del ultimo nodo
             # el angulo puede sufrir variacion
@@ -297,7 +322,8 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
-        self.fibs.add_fibra(f_con, dl, dtheta, capa)
+        self.fibs.add_fibra(f_con, dl, dtheta)
+        return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
 
     def get_punto_sobre_frontera(self):
@@ -359,67 +385,60 @@ class Malla(object):
                     pass
 
     def intersectar_fibras(self):
-        """ recorro las fibras y me fijo las intersecciones entre ellas
-        donde se produce una interseccion se crea un nuevo nodo (si no se intersecta en un nodo)
-        y se subdividen los segmentos que queden partidos en dos por la interseccion
-        finalmente se debe acomodar la conectividad por la aparicion de nuevos segmentos """
-        # primero tengo que recorrer todas las fibras y contrastarlas con las demas
-        # tomo la primera fibra y me fijo si intersecta a todas las demas
-        # despues la segunda fibra y me fijo si intersecta a todas menos a la primera (porque ya me fije)
-        # asi sucesivamente, la ultima fibra no necesito
+        """ recorro las capas y voy intersectando fibras dentro de la misma capa
+        y con las capas vecinas """
         print "intersectando fibras"
-        num_f = len( self.fibs.con )
-        for f0 in range(num_f): # recorro todas las fibras
-            print "f0: ", f0
-            capa0 = self.fibs.capas[f0]
-            fibcon0 = self.fibs.con[f0] # tengo la lista de segmentos
-            num_s0 = len(fibcon0)
-            for f1 in range(f0+1,num_f): # para cada fibra recorro las demas fibras (excepto las previas)
-                print "f1: ", f1
-                capa1 = self.fibs.capas[f1]
-                if not capa1 in (capa0-1, capa0, capa0+1):
-                    continue # paso a la sigueinte fibra, este no intersecta con f0 por estar en capas alejadas
-                fibcon1 = self.fibs.con[f1]
-                num_s1 = len(fibcon1)
-                for j0 in range(num_s0): # recorro los segmentos de la fibra 0
-                    s0 = fibcon0[j0]
-                    n_j0_0, n_j0_1 = self.segs.con[s0]
-                    for j1 in range(num_s1):
-                        s1 = fibcon1[j1]
-                        n_j1_0, n_j1_1 = self.segs.con[s1]
-                        # ya tengo los indices de los nodos de los dos segmentos,
-                        # ahora puedo obtener sus coordenadas y chequear interseccion
-                        r_j0_0 = self.nods.r[n_j0_0]
-                        r_j0_1 = self.nods.r[n_j0_1]
-                        r_j1_0 = self.nods.r[n_j1_0]
-                        r_j1_1 = self.nods.r[n_j1_1]
-                        interseccion = calcular_interseccion(r_j0_0, r_j0_1, r_j1_0, r_j1_1)
-                        if interseccion is None: # no ha habido interseccion
-                            continue
-                        else:
-                            # hubo interseccion
-                            in_r, in_tipo, in_e_j0, in_e_j1 = interseccion
-                            # dependiendo del tipo tendre un nodo nuevo o no
-                            if in_tipo==2: # el nodo interseccion es nuevo
-                                self.nods.add_nodo(in_r, 2)
-                                new_node_index = len(self.nods.r) - 1
-                                # parto en dos los dos segmentos
-                                subseg_j0_0 = [n_j0_0, new_node_index]
-                                subseg_j0_1 = [new_node_index , n_j0_1]
-                                subseg_j1_0 = [n_j1_0, new_node_index]
-                                subseg_j1_1 = [new_node_index , n_j1_1]
-                                # para cada segmento, cambio la conectividad de la primera mitad
-                                # y agrego la segunda mitad a la lista como un nuevo segmento
-                                self.segs.cambiar_conectividad(s0, subseg_j0_0, self.nods.r)
-                                self.segs.cambiar_conectividad(s1, subseg_j1_0, self.nods.r)
-                                self.segs.add_segmento(subseg_j0_1, self.nods.r)
-                                self.segs.add_segmento(subseg_j1_1, self.nods.r)
-                                # ahora debo cambiar la conectividad de las fibra
-                                # insertando un segmento en cada fibra en la posicion correcta
-                                index_newseg_f0 = len( self.segs.con ) - 2 # indice del nuevo segmento de la fibra f0 (subseg_j0_1)
-                                index_newseg_f1 = len( self.segs.con ) - 1 # indice del nuevo segmento de la fibra i1 (subseg_j1_1)
-                                self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
-                                self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
+        for c, cap_con in enumerate(self.caps.con): # recorro las capas
+            print ""
+            print "capa: ", c
+            for fc, f0 in enumerate(cap_con): # recorro las fibras de la capa
+                print ""
+                print "f0 ", f0
+                f0_con = self.fibs.con[f0]
+                # chequeo interseccion con las demas fibras de la misma capa
+                # dejo fuera las fibras con las que ya he chequeado (y la misma fibra, obviamente)
+                if c == len(self.caps.con)-1: # es la ultima capa, solamente tengo que chequear fibras con ella misma
+                    fibras1 = cap_con[fc+1:]
+                else: # no estoy en la ultima capa, chequeo con la misma capa y con la capa siguiente
+                    fibras1 = cap_con[fc+1:] + self.caps.con[c+1]
+                for f1 in fibras1:
+                    print f1,
+                    f1_con = self.fibs.con[f1]
+                    for j0, s0 in enumerate(f0_con): # recorro los segmentos de la fibra f0
+                        n0_s0, n1_s0 = self.segs.con[s0]
+                        r0_s0 = self.nods.get_r(n0_s0)
+                        r1_s0 = self.nods.get_r(n1_s0)
+                        for j1, s1 in enumerate(f1_con): # recorro los segmentos de la fibra f1
+                            n0_s1, n1_s1 = self.segs.con[s1]
+                            r0_s1 = self.nods.get_r(n0_s1)
+                            r1_s1 = self.nods.get_r(n1_s1)
+                            interseccion = calcular_interseccion(r0_s0, r1_s0, r0_s1, r1_s1)
+                            if interseccion is None: # no ha habido interseccion
+                                continue
+                            else:
+                                # hubo interseccion
+                                in_r, in_tipo, in_e_j0, in_e_j1 = interseccion
+                                # dependiendo del tipo tendre un nodo nuevo o no
+                                if in_tipo==2: # el nodo interseccion es nuevo
+                                    self.nods.add_nodo(in_r, 2)
+                                    new_node_index = len(self.nods.r) - 1
+                                    # parto en dos los dos segmentos
+                                    subseg_j0_0 = [n0_s0, new_node_index]
+                                    subseg_j0_1 = [new_node_index , n1_s0]
+                                    subseg_j1_0 = [n0_s1, new_node_index]
+                                    subseg_j1_1 = [new_node_index , n1_s1]
+                                    # para cada segmento, cambio la conectividad de la primera mitad
+                                    # y agrego la segunda mitad a la lista como un nuevo segmento
+                                    self.segs.cambiar_conectividad(s0, subseg_j0_0, self.nods.r)
+                                    self.segs.cambiar_conectividad(s1, subseg_j1_0, self.nods.r)
+                                    self.segs.add_segmento(subseg_j0_1, self.nods.r)
+                                    self.segs.add_segmento(subseg_j1_1, self.nods.r)
+                                    # ahora debo cambiar la conectividad de las fibra
+                                    # insertando un segmento en cada fibra en la posicion correcta
+                                    index_newseg_f0 = len( self.segs.con ) - 2 # indice del nuevo segmento de la fibra f0 (subseg_j0_1)
+                                    index_newseg_f1 = len( self.segs.con ) - 1 # indice del nuevo segmento de la fibra i1 (subseg_j1_1)
+                                    self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
+                                    self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
 
 
     def guardar_en_archivo(self, archivo="Malla.txt"):
@@ -449,15 +468,20 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # termino con las fibras: indice, dl, dtheta, capa y segmentos
+        # sigo con las fibras: indice, dl, dtheta, y segmentos (conectividad)
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
-        for f in range( len(self.fibs.con) ):
-            nsegs = len(self.fibs.con[f])
+        for f, fcon in enumerate(self.fibs.con):
             dString = "{:6d}".format(f) # indice
-            dString += "{:6d}".format(self.fibs.capas[f]) # capa
             dString += "{:17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.dthetas[f]) # dl y dtheta
-            dString += "".join( "{:6d}".format(val) for val in self.fibs.con[f] ) + "\n" # conectividad
+            dString += "".join( "{:6d}".format(val) for val in fcon ) + "\n" # conectividad
+            fid.write(dString)
+        # termino con las capas: indice y fibras (conectividad):
+        dString = "*Capas \n" + str( len(self.caps.con) ) + "\n"
+        fid.write(dString)
+        for c, ccon in enumerate(self.caps.con):
+            dString = "{:+6d}".format(c) # indice
+            dString += "".join( "{:6d}".format(val) for val in ccon ) + "\n" # conectividad
             fid.write(dString)
         # ---
         # termine
@@ -495,18 +519,25 @@ class Malla(object):
         fibs = list()
         dls = list()
         dthetas = list()
-        capas = list()
         for i in range(num_f):
             svals = fid.next().split()
             j = int(svals[0])
             dl = float(svals[1])
             dtheta = float(svals[2])
-            capa = int(svals[3])
-            fcon = [int(val) for val in svals[4:]]
+            fcon = [int(val) for val in svals[3:]]
             fibs.append(fcon)
             dls.append(dl)
             dthetas.append(dtheta)
-            capas.append(capa)
+        # luego la capas
+        target = "*capas"
+        ierr = find_string_in_file(fid, target, True)
+        num_c = int(fid.next())
+        caps = list()
+        for c in range(num_c):
+            svals = fid.next().split()
+            j = int(svals[0])
+            ccon = [int(val) for val in svals[1:]]
+            caps.append(ccon)
         # ahora que tengo todo armo el objeto
         malla = cls(L)
         # le asigno los nodos
@@ -521,8 +552,11 @@ class Malla(object):
             f_con = fibs[i]
             dl = dls[i]
             dtheta = dthetas[i]
-            capa = capas[i]
-            malla.fibs.add_fibra(f_con, dl, dtheta, capa)
+            malla.fibs.add_fibra(f_con, dl, dtheta)
+        # le asigno las capas
+        for c in range(num_c):
+            c_con = caps[c]
+            malla.caps.add_capa(c_con)
         # listo
         return malla
 
@@ -586,28 +620,30 @@ class Malla(object):
 
 
     def pre_graficar_fibras(self):
-        nc = np.max(self.fibs.capas) + 1
+        nc = len(self.caps.con)
         colores = plt.cm.rainbow(np.linspace(0,1,nc))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
-        xx_fibs = [ list() for f in  self.fibs.con ]
-        yy_fibs = [ list() for f in  self.fibs.con ]
-        grafs_fibs = list() # un plot para cada fibra
-        for f in range(len(self.fibs.con)):  # f es un indice
-            # el primer nodo del primer segmento lo agrego antes del bucle
-            s = self.fibs.con[f][0] # obtengo el indice del primer segmento de la fibra numero f
-            n = self.segs.con[s][0] # obtengo el indice del primer nodo del segmento numero s
-            r = self.nods.r[n] # obtengo las coordenadas del nodo numero n
-            xx_fibs[f].append(r[0])
-            yy_fibs[f].append(r[1])
-            for s in self.fibs.con[f]:
-                # s es un indice de un segmento
-                # voy agregando los nodos finales
-                n = self.segs.con[s][1]
-                r = self.nods.r[n]
-                xx_fibs[f].append(r[0])
-                yy_fibs[f].append(r[1])
-            grafs_fibs.append( self.ax.plot(xx_fibs[f], yy_fibs[f], linestyle="-", marker="", label=str(f), color=colores[self.fibs.capas[f]]) )
+        xx = [ list() for f in  self.fibs.con ]
+        yy = [ list() for f in  self.fibs.con ]
+        grafs = list()
+        for c, c_con in enumerate(self.caps.con): # recorro las capas
+            for f in c_con: # recorro las fibra de la capa
+                f_con = self.fibs.con[f]
+                # antes de recorrer los segmentos de cada fibra
+                # el primer nodo del primer segmento lo agrego antes del bucle
+                s = f_con[0] # primer segmento de la fibra f
+                n = self.segs.con[s][0] # primer nodo del segmento s
+                r = self.nods.r[n] # coordenadas de ese nodo
+                xx[f].append(r[0])
+                yy[f].append(r[1])
+                for s in f_con: # recorro los segmentos de la fibra f
+                    s_con = self.segs.con[s]
+                    n = s_con[1] # ultimo nodo del segmento s
+                    r = self.nods.r[n] # coordenadas de ese nodo
+                    xx[f].append(r[0])
+                    yy[f].append(r[1])
+                grafs.append( self.ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=colores[c]) )
 
     def pre_graficar_nodos_frontera(self):
         # dibujo las fibras (los segmentos)
