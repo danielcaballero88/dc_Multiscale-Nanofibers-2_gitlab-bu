@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 # import collections
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
+from Aux import calcular_longitud_de_segmento
 
 
 class Nodos(object):
@@ -377,7 +378,7 @@ class Malla(object):
                 print "f1: ", f1
                 capa1 = self.fibs.capas[f1]
                 if not capa1 in (capa0-1, capa0, capa0+1):
-                    continue # paso a la sigueinte fibra, este no interseca con f0 por estar en capas alejadas
+                    continue # paso a la sigueinte fibra, este no intersecta con f0 por estar en capas alejadas
                 fibcon1 = self.fibs.con[f1]
                 num_s1 = len(fibcon1)
                 for j0 in range(num_s0): # recorro los segmentos de la fibra 0
@@ -524,6 +525,45 @@ class Malla(object):
             malla.fibs.add_fibra(f_con, dl, dtheta, capa)
         # listo
         return malla
+
+    def calcular_enrulamientos(self):
+        """ calcular para todas las fibras sus longitudes de contorno y
+        sus longitudes extremo a extremos (loco y lete)
+        y calcula el enrulamiento como lamr=loco/lete """
+        lamsr = []
+        for fcon in self.fibs.con: # recorro las fibras del rve
+            loco = 0.
+            for s in fcon: # recorro los segmentos de cada fibra
+                scon = self.segs.con[s]
+                n0, n1 = scon
+                r0 = self.nods.r[n0]
+                r1 = self.nods.r[n1]
+                loco += calcular_longitud_de_segmento(r0, r1)
+            n_ini = fcon[0][0]
+            n_fin = fcon[-1][1]
+            r_ini = self.nods.r[n_ini]
+            r_fin = self.nods.r[n_fin]
+            lete = calcular_longitud_de_segmento(r_ini, r_fin)
+            lamsr.append( loco/lete )
+        return lamsr
+
+    def calcular_distribucion_de_enrulamiento(self, n=10):
+        """ calcular la distribucion de enrulamientos
+        para eso subdivido el intervalo total en n subintervalos
+        y cuento cuantas fibras caen dentro de cada subintervalo,
+        obtengo asi una distribucion discreta (historiograma?) """
+        lamsr = self.calcular_enrulamientos()
+        lamsr = np.array(lamsr, dtype=float)
+        lamr_min = np.min(lamsr)
+        lamr_max = np.max(lamsr)
+        delta = (lamr_max - lamr_min) / n
+        frec = list()
+        for i in range(n):
+            lam_ini = n*delta
+            lam_fin = lam_ini + delta
+            frec_i = np.sum( lam_ini < lamsr < lam_fin )
+            frec.append(frec_i)
+        return frec
 
     def pre_graficar_bordes(self):
         # seteo
