@@ -215,6 +215,11 @@ class Capas(object):
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros()
 
+    def set_capas_listoflists(self, capas_con):
+        self.__init__()
+        for capa_con in capas_con:
+            self.add_capa(capa_con)
+
     def add_capa(self, cap_con):
         self.con.append(cap_con)
 
@@ -384,6 +389,23 @@ class Malla(object):
                     # y en ese caso no hay nada que hacer! puesto que el nodo ya esta en el borde
                     pass
 
+    def cambiar_capas(self, new_ncapas):
+        """ un mapeo de las fibras en un numero de capas diferente """
+        # me fijo cuantas fibras van a entrar en cada capa
+        nfibras = len(self.fibs.con)
+        nf_x_capa = int(nfibras / new_ncapas)
+        # armo una nueva conectividad de capas
+        capas_con = list()
+        for c in range(new_ncapas-1): # -1 porque la ultima capa la hare aparte
+            print c
+            capa_con = range(c*nf_x_capa, (c+1)*nf_x_capa)
+            capas_con.append(capa_con)
+        # la ultima capa puede tener alguna fibra de mas
+        c = new_ncapas - 1
+        capa_con = range(c*nf_x_capa, (c+1)*nf_x_capa)
+        capas_con.append(capa_con)
+        self.caps.set_capas_listoflists(capas_con)
+
     def intersectar_fibras(self):
         """ recorro las capas y voy intersectando fibras dentro de la misma capa
         y con las capas vecinas """
@@ -440,6 +462,113 @@ class Malla(object):
                                     self.fibs.insertar_segmento(f0, j0+1, index_newseg_f0)
                                     self.fibs.insertar_segmento(f1, j1+1, index_newseg_f1)
 
+    def calcular_conectividad_de_interfibras(self):
+        """ ojo son diferentes a las subfibras de una malla simplificada
+        aqui las interfibras son concatenaciones de segmentos entre nodos interseccion
+        en una ms las subfibras son una simplificacion de una fibra dando solamente los nodos extremos y enrulamiento """
+        infbs_con = list() # conectividad: lista de listas de segmentos
+        for f, fcon in enumerate(self.fibs.con): # recorro las fibras
+            # cada fibra que empieza implica una nueva interfibra
+            infb = list() # conectividad de la interfibra: lista de segmentos
+            # tengo que ir agregando segmentos hasta toparme con un nodo interseccion o frontera
+            for s in fcon: # recorro los segmentos de la fibra f
+                scon = self.segs.con[s]
+                n0, n1 = scon
+                # agrego el segmento s a la interfibra
+                infb.append(s)
+                # si el ultimo nodo de s es interseccion o frontera aqui termina la interfibra
+                if self.nods.tipos[n1] in (1,2):
+                    infbs_con.append(infb) # agrego la interfibra a la conectividad
+                    infb = list() # preparo una nueva interfibra vacia para continuar agregando segmentos
+        # aqui ya deberia tener una conectividad terminada
+        return infbs_con
+
+    def calcular_enrulamientos(self):
+        """ calcular para todas las fibras sus longitudes de contorno y
+        sus longitudes extremo a extremos (loco y lete)
+        y calcula el enrulamiento como lamr=loco/lete """
+        lamsr = []
+        for fcon in self.fibs.con: # recorro las fibras del rve
+            loco = 0.
+            for s in fcon: # recorro los segmentos de cada fibra
+                scon = self.segs.con[s]
+                n0, n1 = scon
+                r0 = self.nods.r[n0]
+                r1 = self.nods.r[n1]
+                loco += calcular_longitud_de_segmento(r0, r1)
+            n_ini = self.segs.con[fcon[0]][0]
+            n_fin = self.segs.con[fcon[-1]][1]
+            r_ini = self.nods.r[n_ini]
+            r_fin = self.nods.r[n_fin]
+            lete = calcular_longitud_de_segmento(r_ini, r_fin)
+            lamsr.append( loco/lete )
+        return lamsr
+
+    def calcular_distribucion_de_enrulamiento(self, n=10):
+        """ calcular la distribucion de enrulamientos
+        para eso subdivido el intervalo total en n subintervalos
+        y cuento cuantas fibras caen dentro de cada subintervalo,
+        obtengo asi una distribucion discreta (historiograma?) """
+        lamsr = self.calcular_enrulamientos()
+        lamsr = np.array(lamsr, dtype=float)
+        lamr_min = np.min(lamsr)
+        lamr_max = np.max(lamsr)
+        delta = (lamr_max - lamr_min) / n
+        x = list()
+        frec = list()
+        for i in range(n):
+            lamr_ini = lamr_min + i*delta
+            lamr_fin = lamr_ini + delta
+            x.append(0.5*(lamr_ini+lamr_fin))
+            mask = np.logical_and( lamr_ini <= lamsr, lamsr < lamr_fin ) # HOJALDRE creo que el ultimo no entra nunca en intervalo
+            frec_i = np.sum( mask )
+            frec.append(frec_i)
+        return x, delta, frec
+
+    def calcular_enrulamientos_de_interfibras(self):
+        """ calcular para todas las interfibras sus longitudes de contorno y
+        sus longitudes extremo a extremos (loco y lete)
+        y calcula el enrulamiento como lamr=loco/lete """
+        lamsr = []
+        infbs_con = self.calcular_conectividad_de_interfibras()
+        for infb_con in infbs_con: # recorro las interfibras (fibras interectadas) del rve
+            loco = 0.
+            for s in infb_con: # recorro los segmentos de cada interfibra
+                scon = self.segs.con[s]
+                n0, n1 = scon
+                r0 = self.nods.r[n0]
+                r1 = self.nods.r[n1]
+                loco += calcular_longitud_de_segmento(r0, r1)
+            n_ini = self.segs.con[infb_con[0]][0]
+            n_fin = self.segs.con[infb_con[-1]][1]
+            r_ini = self.nods.r[n_ini]
+            r_fin = self.nods.r[n_fin]
+            lete = calcular_longitud_de_segmento(r_ini, r_fin)
+            lamsr.append( loco/lete )
+        return lamsr
+
+    def calcular_distribucion_de_enrulamiento_de_interfibras(self, lamr_min=None, lamr_max=None, n=10):
+        """ calcular la distribucion de enrulamientos
+        para eso subdivido el intervalo total en n subintervalos
+        y cuento cuantas interfibras caen dentro de cada subintervalo,
+        obtengo asi una distribucion discreta (historiograma?) """
+        lamsr = self.calcular_enrulamientos_de_interfibras()
+        lamsr = np.array(lamsr, dtype=float)
+        if lamr_min is None:
+            lamr_min = np.min(lamsr)
+        if lamr_max is None:
+            lamr_max = np.max(lamsr)
+        delta = (lamr_max - lamr_min) / n
+        x = list()
+        frec = list()
+        for i in range(n):
+            lamr_ini = lamr_min + i*delta
+            lamr_fin = lamr_ini + delta
+            x.append(0.5*(lamr_ini+lamr_fin))
+            mask = np.logical_and( lamr_ini <= lamsr, lamsr < lamr_fin )
+            frec_i = np.sum( mask )
+            frec.append(frec_i)
+        return x, delta, frec
 
     def guardar_en_archivo(self, archivo="Malla.txt"):
         fid = open(archivo, "w")
@@ -560,53 +689,11 @@ class Malla(object):
         # listo
         return malla
 
-    def calcular_enrulamientos(self):
-        """ calcular para todas las fibras sus longitudes de contorno y
-        sus longitudes extremo a extremos (loco y lete)
-        y calcula el enrulamiento como lamr=loco/lete """
-        lamsr = []
-        for fcon in self.fibs.con: # recorro las fibras del rve
-            loco = 0.
-            for s in fcon: # recorro los segmentos de cada fibra
-                scon = self.segs.con[s]
-                n0, n1 = scon
-                r0 = self.nods.r[n0]
-                r1 = self.nods.r[n1]
-                loco += calcular_longitud_de_segmento(r0, r1)
-            n_ini = self.segs.con[fcon[0]][0]
-            n_fin = self.segs.con[fcon[-1]][1]
-            r_ini = self.nods.r[n_ini]
-            r_fin = self.nods.r[n_fin]
-            lete = calcular_longitud_de_segmento(r_ini, r_fin)
-            lamsr.append( loco/lete )
-        return lamsr
-
-    def calcular_distribucion_de_enrulamiento(self, n=10):
-        """ calcular la distribucion de enrulamientos
-        para eso subdivido el intervalo total en n subintervalos
-        y cuento cuantas fibras caen dentro de cada subintervalo,
-        obtengo asi una distribucion discreta (historiograma?) """
-        lamsr = self.calcular_enrulamientos()
-        lamsr = np.array(lamsr, dtype=float)
-        lamr_min = np.min(lamsr)
-        lamr_max = np.max(lamsr)
-        delta = (lamr_max - lamr_min) / n
-        frec = list()
-        for i in range(n):
-            lamr_ini = lamr_min + i*delta
-            lamr_fin = lamr_ini + delta
-            mask = np.logical_and( lamr_ini <= lamsr, lamsr < lamr_fin )
-            frec_i = np.sum( mask )
-            frec.append(frec_i)
-        return frec
-
-    def pre_graficar_bordes(self):
+    def pre_graficar_bordes(self, fig, ax):
         # seteo
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(111)
         margen = 0.1*self.L
-        self.ax.set_xlim(left=0-margen, right=self.L+margen)
-        self.ax.set_ylim(bottom=0-margen, top=self.L+margen)
+        ax.set_xlim(left=0-margen, right=self.L+margen)
+        ax.set_ylim(bottom=0-margen, top=self.L+margen)
         self.pregraficado = True
         # dibujo los bordes del rve
         fron = []
@@ -614,15 +701,16 @@ class Malla(object):
         fron.append( [[0,0], [self.L,0]] )
         fron.append( [[0,self.L], [self.L,self.L]] )
         fron.append( [[self.L,self.L], [self.L,0]] )
-        plt_fron0 = self.ax.plot(fron[0][0], fron[0][1], linestyle=":")
-        plt_fron1 = self.ax.plot(fron[1][0], fron[1][1], linestyle=":")
-        plt_fron2 = self.ax.plot(fron[2][0], fron[2][1], linestyle=":")
-        plt_fron3 = self.ax.plot(fron[3][0], fron[3][1], linestyle=":")
+        plt_fron0 = ax.plot(fron[0][0], fron[0][1], linestyle=":")
+        plt_fron1 = ax.plot(fron[1][0], fron[1][1], linestyle=":")
+        plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":")
+        plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":")
 
 
-    def pre_graficar_fibras(self):
+    def pre_graficar_capas(self, fig, ax):
         nc = len(self.caps.con)
-        colores = plt.cm.rainbow(np.linspace(0,1,nc))
+        mi_colormap = plt.cm.raingbow
+        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=nc-1))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -644,9 +732,77 @@ class Malla(object):
                     r = self.nods.r[n] # coordenadas de ese nodo
                     xx[f].append(r[0])
                     yy[f].append(r[1])
-                grafs.append( self.ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=colores[c]) )
+                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=sm.to_rgba[c]) )
+        sm._A = []
+        fig.colorbar(sm)
 
-    def pre_graficar_nodos_frontera(self):
+    def pre_graficar_fibras(self, fig, ax):
+        # preparo un mapa de colores mapeable por escalar
+        lamsr = self.calcular_enrulamientos()
+        mi_colormap = plt.cm.rainbow
+        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=np.min(lamsr), vmax=np.max(lamsr)))
+        # dibujo las fibras (los segmentos)
+        # preparo las listas, una lista para cada fibra
+        xx = [ list() for f in  self.fibs.con ]
+        yy = [ list() for f in  self.fibs.con ]
+        grafs = list()
+        for c, c_con in enumerate(self.caps.con): # recorro las capas
+            for f in c_con: # recorro las fibra de la capa
+                f_con = self.fibs.con[f]
+                # antes de recorrer los segmentos de cada fibra
+                # el primer nodo del primer segmento lo agrego antes del bucle
+                s = f_con[0] # primer segmento de la fibra f
+                n = self.segs.con[s][0] # primer nodo del segmento s
+                r = self.nods.r[n] # coordenadas de ese nodo
+                xx[f].append(r[0])
+                yy[f].append(r[1])
+                for s in f_con: # recorro los segmentos de la fibra f
+                    s_con = self.segs.con[s]
+                    n = s_con[1] # ultimo nodo del segmento s
+                    r = self.nods.r[n] # coordenadas de ese nodo
+                    xx[f].append(r[0])
+                    yy[f].append(r[1])
+                col = sm.to_rgba(lamsr[f])
+                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
+        sm._A = []
+        fig.colorbar(sm)
+
+
+    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None):
+        # preparo un mapa de colores mapeable por escalar
+        infbs_con = self.calcular_conectividad_de_interfibras()
+        lamsr = self.calcular_enrulamientos_de_interfibras()
+        mi_colormap = plt.cm.rainbow
+        if lamr_min is None:
+            lamr_min = np.min(lamsr)
+        if lamr_max is None:
+            lamr_max = np.max(lamsr)
+        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        # dibujo las fibras (los segmentos)
+        # preparo las listas, una lista para cada fibra
+        xx = [ list() for infb_con in  infbs_con ]
+        yy = [ list() for infb_con in  infbs_con ]
+        grafs = list()
+        for i, infb_con in enumerate(infbs_con): # recorro las interfibras
+            # antes de recorrer los segmentos de cada interfibra
+            # el primer nodo del primer segmento lo agrego antes del bucle
+            s = infb_con[0] # primer segmento de la interfibra i
+            n = self.segs.con[s][0] # primer nodo del segmento s
+            r = self.nods.r[n] # coordenadas de ese nodo
+            xx[i].append(r[0])
+            yy[i].append(r[1])
+            for s in infb_con: # recorro los segmentos de la interfibra i
+                s_con = self.segs.con[s]
+                n = s_con[1] # ultimo nodo del segmento s
+                r = self.nods.r[n] # coordenadas de ese nodo
+                xx[i].append(r[0])
+                yy[i].append(r[1])
+            col = sm.to_rgba(lamsr[i])
+            grafs.append( ax.plot(xx[i], yy[i], linestyle="-", marker="", label=str(i), color=col) )
+        sm._A = []
+        fig.colorbar(sm)
+
+    def pre_graficar_nodos_frontera(self, fig, ax):
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -664,9 +820,9 @@ class Malla(object):
             r = self.nods.r[n] # obtengo las coordenadas del nodo numero n
             xx[f].append(r[0])
             yy[f].append(r[1])
-            grafs.append( self.ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k") )
+            grafs.append( ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k") )
 
-    def pre_graficar_nodos_interseccion(self):
+    def pre_graficar_nodos_interseccion(self, fig, ax):
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = list()
@@ -676,13 +832,18 @@ class Malla(object):
             if self.nods.tipos[n] == 2:
                 xx.append(self.nods.r[n][0])
                 yy.append(self.nods.r[n][1])
-        self.ax.plot(xx, yy, linewidth=0, marker="s", mec="k")
+        ax.plot(xx, yy, linewidth=0, marker="s", mec="k")
 
-    def graficar(self):
+    def pre_graficar(self, fig, ax):
         if not self.pregraficado:
-            self.pre_graficar_bordes()
-            self.pre_graficar_nodos_frontera()
-            self.pre_graficar_nodos_interseccion()
-            self.pre_graficar_fibras()
-        self.ax.legend(loc="upper left", numpoints=1, prop={"size":6})
+            self.pre_graficar_bordes(fig, ax)
+            self.pre_graficar_nodos_frontera(fig, ax)
+            self.pre_graficar_nodos_interseccion(fig, ax)
+            self.pre_graficar_interfibras(fig, ax)
+        ax.legend(loc="upper left", numpoints=1, prop={"size":6})
+
+    def graficar(self, fig=None, ax=None):
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.pre_graficar(ax)
         plt.show()

@@ -624,7 +624,7 @@ class Malla(object):
         ms_nods_t = list() # tipos de los nodos de la malla simplificada
         ms_nods_n = list() # indices originales de los nodos
         ms_sfbs_c = list() # conectividad de subfibras de la malla simplificada
-        ms_sfbs_l = list() # largo de las siguiendo el contorno de los segmentos
+        ms_sfbs_l = list() # largo de las subfibras siguiendo el contorno de los segmentos
         # recorro cada fibra:
         for f in range(len(fibs)): # f es el indice de cada fibra en la malla completa
             # tengo una nueva subfibra
