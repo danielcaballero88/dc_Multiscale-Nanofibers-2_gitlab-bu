@@ -298,7 +298,7 @@ class Subfibras(Conectividad):
             Et = paramcon[0]
             Eb = paramcon[1]
             if lam<=lamr:
-                return Et*(lam-1.)
+                return Eb*(lam-1.)
             else:
                 return Eb*(lamr-1.) + Et*(lam/lamr - 1.)
         d[0] = lineal_con_reclutamiento
@@ -781,6 +781,7 @@ class Malla(object):
             paramcon_s = [float(val) for val in svals]
             sfbs_paramcon.append(paramcon_s)
         # termine
+        raise NotImplementedError("Falta terminar")
 
     def get_x(self):
         return self.nodos.x
@@ -795,9 +796,12 @@ class Malla(object):
         # con las coordenadas que tengan los nodos de la malla
         if x1 is None:
             x1 = self.nodos.x
-        tracciones = np.zeros( (self.sfs.num,2), dtype=float )
+        sfs_ts = np.zeros( (self.sfs.num,1), dtype=float )
+        sfs_as = np.zeros( (self.sfs.num,2), dtype=float )
         for jsf in range(self.sfs.num):
             nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
+            if 15 in (nod_ini, nod_fin):
+                pass
             x_ini = x1[nod_ini]
             x_fin = x1[nod_fin]
             dr = x_fin - x_ini
@@ -805,10 +809,11 @@ class Malla(object):
             lam = dl / self.sfs.letes0[jsf]
             a = dr/dl
             t = self.sfs.calcular_tension_j(jsf, lam)
-            tracciones[jsf] = t*a
-        return tracciones
+            sfs_ts[jsf] = t
+            sfs_as[jsf] = a
+        return sfs_ts, sfs_as
 
-    def calcular_tracciones_sobre_nodos(self, tracciones_subfibras):
+    def calcular_tracciones_sobre_nodos(self, sfs_tracs, sfs_dirs):
         """ calcula las tensiones resultantes sobre los nodos
         recorriendo las subfibras y para cada subfibra sumando
         la traccion correspondiente a sus nodos, con el signo
@@ -817,9 +822,13 @@ class Malla(object):
         # recorro las fibras para saber las tensiones sobre los nodos
         for jsf in range(self.sfs.num):
             # tengo que sumar la tension de la fibra a los nodos
-            traccion_j = tracciones_subfibras[jsf]
+            trac_j = sfs_tracs[jsf]
+            dire_j = sfs_dirs[jsf]
+            traccion_j = trac_j * dire_j
             # sobre el primer nodo va asi y sobre el segundo en sentido contrario
             nod_ini, nod_fin = self.sfs.get_con_sf(jsf)
+            if 15 in (nod_ini, nod_fin):
+                pass
             TraRes[nod_ini] += traccion_j
             TraRes[nod_fin] -= traccion_j
         return TraRes
@@ -846,7 +855,7 @@ class Malla(object):
         dx = np.zeros((self.nodos.num,2), dtype=float)
         for n in range(self.nodos.num):
             if self.nodos.mask_fr[n]:
-                dx[n] = 0.0 # nodo de dirichlet
+                dx[n,:] = 0.0 # nodo de dirichlet
             else:
                 dx[n] = tracciones_nodos[n] / self.psv[n]
         return dx
@@ -859,10 +868,27 @@ class Malla(object):
         if x1 is None:
             dx = np.zeros( np.shape(self.nodos.x), dtype=float )
         # primero calculo segun las coordenadas, las tracciones de las subfibras
-        trac_sfs = self.calcular_tracciones_de_subfibras(x1)
-        trac_nod = self.calcular_tracciones_sobre_nodos(trac_sfs)
+        trac_sfs, dirs_sfs = self.calcular_tracciones_de_subfibras(x1)
+        trac_nod = self.calcular_tracciones_sobre_nodos(trac_sfs, dirs_sfs)
         dx = self.mover_nodos(trac_nod)
         return dx
+
+    def iterar(self, numiters=1, delta=0.1):
+        dx = np.zeros( np.shape(self.nodos.x), dtype=float )
+        for it in range(numiters):
+            trac_sfs, dirs_sfs = self.calcular_tracciones_de_subfibras(self.nodos.x)
+            trac_nod = self.calcular_tracciones_sobre_nodos(trac_sfs, dirs_sfs)
+            for n in range(self.nodos.num):
+                if self.nodos.mask_fr[n]:
+                    dx[n,:] = 0.0
+                else:
+                    trac_nod_n = trac_nod[n]
+                    mag_trac_nod_n = np.sqrt(np.sum(trac_nod_n*trac_nod_n))
+                    if mag_trac_nod_n<1.0:
+                        dx[n,:] = 0.0
+                    else:
+                        dx[n] = delta*self.L * trac_nod[n] / np.sqrt(np.sum(trac_nod[n]*trac_nod[n]))
+            self.nodos.x += dx
 
     def solventar_inestabilidad(self, flag_big_dx, flag_div_dx):
         """ es necesario tener esta subrutina para solventar situaciones
