@@ -834,16 +834,28 @@ class Malla(object):
                 yy.append(self.nods.r[n][1])
         ax.plot(xx, yy, linewidth=0, marker="s", mec="k")
 
-    def pre_graficar(self, fig, ax):
-        if not self.pregraficado:
-            self.pre_graficar_bordes(fig, ax)
-            self.pre_graficar_nodos_frontera(fig, ax)
-            self.pre_graficar_nodos_interseccion(fig, ax)
-            self.pre_graficar_interfibras(fig, ax)
+    def pre_graficar_nodos_internos(self, fig, ax):
+        # dibujo las fibras (los segmentos)
+        # preparo las listas, una lista para cada fibra
+        xx = list()
+        yy = list()
+        grafs = list() # un plot para cada fibra
+        for n in range(len(self.nods.r)):
+            if self.nods.tipos[n] == 0:
+                xx.append(self.nods.r[n][0])
+                yy.append(self.nods.r[n][1])
+        ax.plot(xx, yy, linewidth=0, marker=".", markersize=1)
+
+    def pre_graficar(self, fig, ax, lamr_min = None, lamr_max = None):
+        self.pre_graficar_bordes(fig, ax)
+        self.pre_graficar_nodos_frontera(fig, ax)
+        self.pre_graficar_nodos_interseccion(fig, ax)
+        self.pre_graficar_nodos_internos(fig, ax)
+        self.pre_graficar_interfibras(fig, ax, lamr_min=lamr_min, lamr_max=lamr_max)
         ax.legend(loc="upper left", numpoints=1, prop={"size":6})
 
-    def graficar(self, fig=None, ax=None):
+    def graficar(self, fig=None, ax=None, lamr_min=None, lamr_max=None):
         if ax is None:
             fig, ax = plt.subplots()
-        self.pre_graficar(ax)
+        self.pre_graficar(fig, ax, lamr_min, lamr_max)
         plt.show()
