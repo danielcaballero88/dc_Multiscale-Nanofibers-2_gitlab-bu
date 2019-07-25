@@ -31,10 +31,7 @@ class Nodos(object):
         return self.r[i_nodo]
 
     def __len__(self):
-        if not len(self.r) == len(self.tipos):
-            raise ValueError, "longitudes de coordenadas y tipos no concuerdan"
-        else:
-            return len(self.r)
+        return len(self.r)
 
 
 class Segmentos(object):
@@ -42,6 +39,9 @@ class Segmentos(object):
         self.con = TypedLists.Lista_de_listas_de_dos_enteros() # lista de listas de dos nodos (indices)
         self.thetas = TypedLists.Lista_de_floats()
         self.longs = TypedLists.Lista_de_floats()
+
+    def __len__(self):
+        return len(self.con)
 
     def add_segmento(self, seg_con, coors):
         """
@@ -262,7 +262,7 @@ class Malla(object):
         ncapas = len(self.caps.con)
         capa_con = list()
         for i in range(nfibs):
-            j = self.make_fibra(dl, dtheta)
+            j = self.make_fibra2(dl, dtheta)
             capa_con.append(j)
         self.caps.add_capa(capa_con)
 
@@ -327,6 +327,68 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
+        self.fibs.add_fibra(f_con, dl, dtheta)
+        return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
+
+    def make_fibra2(self, dl, dtheta):
+        """ tengo que armar una lista de segmentos
+        nota: todos los indices (de nodos, segmentos y fibras)
+        son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
+        idem para segmentos y fibras
+        los indices de los nodos, de los segmentos y de las fibras van por separado
+        es decir que hay un nodo 1, un segmento 1 y una fibra 1
+        pero no hay dos de misma especie que compartan indice """
+        # ---
+        # primero hago un segmento solo
+        # para eso pongo un punto sobre la frontera del rve y el otro lo armo con un desplazamiento recto
+        # tomo un angulo random entre 0 y pi, saliente del borde hacia adentro del rve
+        # eso me da un nuevo segmento
+        # agrego todas las conectividades
+        # ---
+        # Voy a ir guardando en una lista las coordenadas de los nodos
+        coors = list()
+        # Armo el primer segmento
+        # primero busco un nodo en el contorno
+        x0, y0, b0 = self.get_punto_sobre_frontera()
+        theta = np.random.rand() * np.pi + b0*0.5*np.pi # angulo inicial
+        dx = dl * np.cos(theta)
+        dy = dl * np.sin(theta)
+        coors.append( [x0,y0] )
+        coors.append( [x0+dx, y0+dy] )
+        # ahora agrego nuevos nodos en un bucle
+        # cada iteracion corresponde a depositar un nuevo segmento
+        n = 1
+        while True:
+            # si el nodo anterior ha caido fuera del rve ya esta la fibra
+            if self.check_fuera_del_RVE(coors[-1]):
+                break
+            n += 1
+            # de lo contrario armo un nuevo segmento a partir del ultimo nodo
+            # el angulo puede sufrir variacion
+            theta = theta + dtheta * (2.0*np.random.rand() - 1.0)
+            # desplazamiento:
+            dx = dl * np.cos(theta)
+            dy = dl * np.sin(theta)
+            # nuevo nodo
+            x = coors[-1][0] + dx
+            y = coors[-1][1] + dy
+            coors.append( [x,y] )
+        # -
+        # Aqui termine de obtener las coordenadas de los nodos que componen la fibra
+        # Voy a ensamblar la fibra como concatenacion de segmentos, que a su vez son concatenacion de dos nodos
+        f_con = list()
+        # agrego el primer nodo a la conectividad de nodos
+        self.nods.add_nodo(coors[0], 1)
+        for coor in coors[1:]: # reocrro los nodos desde el nodo 1 (segundo nodo)
+            self.nods.add_nodo(coor, 0)
+            nnods = len(self.nods)
+            s0 = [nnods-2, nnods-1]
+            self.segs.add_segmento(s0, self.nods.r)
+            nsegs = len(self.segs)
+            f_con.append(nsegs-1)
+        # al final corto la fibra y la almaceno
+        self.nods.tipos[-1] = 1
+        self.trim_fibra_at_frontera(f_con)
         self.fibs.add_fibra(f_con, dl, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
@@ -504,15 +566,17 @@ class Malla(object):
             lamsr.append( loco/lete )
         return lamsr
 
-    def calcular_distribucion_de_enrulamiento(self, n=10):
+    def calcular_distribucion_de_enrulamiento(self, lamr_min=None, lamr_max=None, n=10):
         """ calcular la distribucion de enrulamientos
         para eso subdivido el intervalo total en n subintervalos
         y cuento cuantas fibras caen dentro de cada subintervalo,
         obtengo asi una distribucion discreta (historiograma?) """
         lamsr = self.calcular_enrulamientos()
         lamsr = np.array(lamsr, dtype=float)
-        lamr_min = np.min(lamsr)
-        lamr_max = np.max(lamsr)
+        if lamr_min is None:
+            lamr_min = np.min(lamsr)
+        if lamr_max is None:
+            lamr_max = np.max(lamsr)
         delta = (lamr_max - lamr_min) / n
         x = list()
         frec = list()
@@ -855,7 +919,7 @@ class Malla(object):
         self.pre_graficar_nodos_frontera(fig, ax)
         self.pre_graficar_nodos_interseccion(fig, ax)
         self.pre_graficar_nodos_internos(fig, ax)
-        self.pre_graficar_interfibras(fig, ax, lamr_min=lamr_min, lamr_max=lamr_max)
+        self.pre_graficar_fibras(fig, ax, lamr_min=lamr_min, lamr_max=lamr_max)
         ax.legend(loc="upper left", numpoints=1, prop={"size":6})
 
     def graficar(self, fig=None, ax=None, lamr_min=None, lamr_max=None):

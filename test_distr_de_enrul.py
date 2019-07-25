@@ -13,9 +13,8 @@ mc = Mc(L)
 
 start = time.clock()
 for i in range(1):
-    mc.make_capa(0.005*L, pi*0.1, 100)
+    mc.make_capa(0.01*L, pi*0.1, 100)
 print time.clock() - start
-
 
 # mc = Mc.leer_de_archivo("Malla.txt")
 
@@ -27,10 +26,10 @@ print time.clock() - start
 
 # mc.guardar_en_archivo("Malla.txt")
 
-lamsr = mc.calcular_enrulamientos_de_interfibras()
+lamsr = mc.calcular_enrulamientos()
 print lamsr
 
-lrs, dlr, frecs = mc.calcular_distribucion_de_enrulamiento_de_interfibras(lamr_min=1.0, lamr_max=2.0, n=40)
+lrs, dlr, frecs = mc.calcular_distribucion_de_enrulamiento(lamr_min=1.0, lamr_max=2.0, n=20)
 print lrs
 print dlr
 print frecs
