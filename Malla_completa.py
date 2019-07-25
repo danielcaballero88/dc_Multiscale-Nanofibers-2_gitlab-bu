@@ -261,9 +261,16 @@ class Malla(object):
         """
         ncapas = len(self.caps.con)
         capa_con = list()
-        for i in range(nfibs):
+        i = 0
+        while True:
+            i += 1
             j = self.make_fibra2(dl, dtheta)
-            capa_con.append(j)
+            if j == -1:
+                i -= 1
+            else:
+                capa_con.append(j)
+            if i == nfibs:
+                break
         self.caps.add_capa(capa_con)
 
     def make_fibra(self, dl, dtheta):
@@ -375,6 +382,11 @@ class Malla(object):
             coors.append( [x,y] )
         # -
         # Aqui termine de obtener las coordenadas de los nodos que componen la fibra
+        # si la fibra es muy corta la voy a descartar
+        # para eso calculo su longitud de contorno
+        loco = dl*float(len(coors)-1) # esto es aproximado porque el ultimo segmento se recorta
+        if loco < 0.3*self.L:
+            return -1
         # Voy a ensamblar la fibra como concatenacion de segmentos, que a su vez son concatenacion de dos nodos
         f_con = list()
         # agrego el primer nodo a la conectividad de nodos
@@ -386,7 +398,7 @@ class Malla(object):
             self.segs.add_segmento(s0, self.nods.r)
             nsegs = len(self.segs)
             f_con.append(nsegs-1)
-        # al final corto la fibra y la almaceno
+        # al final recorto la fibra y la almaceno
         self.nods.tipos[-1] = 1
         self.trim_fibra_at_frontera(f_con)
         self.fibs.add_fibra(f_con, dl, dtheta)

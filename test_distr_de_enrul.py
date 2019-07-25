@@ -11,9 +11,12 @@ L = 1.0
 
 mc = Mc(L)
 
+devangle = 5. * np.pi / 180.
+dl = 0.1 * L
+
 start = time.clock()
 for i in range(1):
-    mc.make_capa(0.01*L, pi*0.1, 100)
+    mc.make_capa(dl, devangle, 500)
 print time.clock() - start
 
 # mc = Mc.leer_de_archivo("Malla.txt")
@@ -29,7 +32,7 @@ print time.clock() - start
 lamsr = mc.calcular_enrulamientos()
 print lamsr
 
-lrs, dlr, frecs = mc.calcular_distribucion_de_enrulamiento(lamr_min=1.0, lamr_max=2.0, n=20)
+lrs, dlr, frecs = mc.calcular_distribucion_de_enrulamiento(lamr_min=1.0, lamr_max=1.3, n=15)
 print lrs
 print dlr
 print frecs
@@ -42,12 +45,12 @@ print index
 
 fig1, ax1 = plt.subplots()
 mc.pre_graficar_bordes(fig1, ax1)
-mc.pre_graficar_interfibras(fig1, ax1, lamr_min = 1.0, lamr_max = 2.0)
+mc.pre_graficar_interfibras(fig1, ax1, lamr_min = 1.0, lamr_max = 1.3)
 mc.pre_graficar_nodos_interseccion(fig1, ax1)
 
 fig2, ax2 = plt.subplots()
 mc.pre_graficar_bordes(fig2, ax2)
-mc.pre_graficar_fibras(fig2, ax2, lamr_min=1.0, lamr_max=2.0)
+mc.pre_graficar_fibras(fig2, ax2, lamr_min=1.0, lamr_max=1.3)
 mc.pre_graficar_nodos_interseccion(fig2, ax2)
 
 fig3, ax3 = plt.subplots()
