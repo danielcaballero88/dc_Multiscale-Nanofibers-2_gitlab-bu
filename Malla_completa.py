@@ -736,11 +736,15 @@ class Malla(object):
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar_fibras(self, fig, ax):
+    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         mi_colormap = plt.cm.rainbow
-        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=np.min(lamsr), vmax=np.max(lamsr)))
+        if lamr_min is None:
+            lamr_min = np.min(lamsr)
+        if lamr_max is None:
+            lamr_max = np.max(lamsr)
+        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
