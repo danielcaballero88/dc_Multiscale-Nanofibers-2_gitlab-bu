@@ -178,30 +178,32 @@ class Fibras(object):
     def __init__(self):
         self.con = TypedLists.Lista_de_listas_de_enteros() # conectividad: va a ser una lista de listas de segmentos (sus indices nada mas), cada segmento debe ser una lista de 2 nodos
         self.dls = TypedLists.Lista_de_floats()
+        self.ds = TypedLists.Lista_de_floats()
         self.dthetas = TypedLists.Lista_de_floats()
 
-    def add_fibra(self, fib_con, dl, dtheta):
+    def add_fibra(self, fib_con, dl, d, dtheta):
         self.con.append(fib_con)
         self.dls.append(dl)
+        self.ds.append(d)
         self.dthetas.append(dtheta)
 
-    def add_seg_a_fibra(self, j, seg):
-        # agrego seg
-        assert isinstance(seg, int)
-        self.con[j].append(seg)
+    # def add_seg_a_fibra(self, j, seg):
+    #     # agrego seg
+    #     assert isinstance(seg, int)
+    #     self.con[j].append(seg)
 
-    def nueva_fibra_vacia(self, dl, dtheta):
-        # agrego una nueva fibra, vacia por ahora
-        self.con.append( list() )
-        self.dls.append(dl)
-        self.dthetas.append(dtheta)
+    # def nueva_fibra_vacia(self, dl, dtheta):
+    #     # agrego una nueva fibra, vacia por ahora
+    #     self.con.append( list() )
+    #     self.dls.append(dl)
+    #     self.dthetas.append(dtheta)
 
-    def add_seg_a_fibra_actual(self, seg):
-        # argrego seg a la ultima fibra
-        assert isinstance(seg, int)
-        n = len(self.con)
-        assert n>=1
-        self.con[n-1].append(seg)
+    # def add_seg_a_fibra_actual(self, seg):
+    #     # argrego seg a la ultima fibra
+    #     assert isinstance(seg, int)
+    #     n = len(self.con)
+    #     assert n>=1
+    #     self.con[n-1].append(seg)
 
     def insertar_segmento(self, j, k, s):
         """ inserta un segmento en la conectividad de una fibra
@@ -229,8 +231,9 @@ class Capas(object):
 
 
 class Malla(object):
-    def __init__(self, L):
+    def __init__(self, L, Dm):
         self.L = L
+        self.Dm = Dm # diametro medio de fibras y espesor de las capas
         self.caps = Capas() # lista vacia
         self.fibs = Fibras() # lista vacia
         self.segs = Segmentos() # lista vacia
@@ -254,7 +257,7 @@ class Malla(object):
         self.bordes_s.add_segmento([2,3], self.bordes_n.r)
         self.bordes_s.add_segmento([3,0], self.bordes_n.r)
 
-    def make_capa(self, dl, dtheta, nfibs):
+    def make_capa(self, dl, d, dtheta, nfibs):
         """
         armo una capa con nfibs fibras, todas van a armarse con los
         mismos parmetros dl y dtheta (se debe modificar para usar distribuciones)
@@ -264,7 +267,7 @@ class Malla(object):
         i = 0
         while True:
             i += 1
-            j = self.make_fibra2(dl, dtheta)
+            j = self.make_fibra2(dl, d, dtheta)
             if j == -1:
                 i -= 1
             else:
@@ -272,6 +275,25 @@ class Malla(object):
             if i == nfibs:
                 break
         self.caps.add_capa(capa_con)
+
+    def calcular_fraccion_de_volumen_de_una_capa(self, capcon):
+        """ calcula la fraccion de volumen de una capa como
+        el volumen ocupado por fibras
+        dividido el volumen total de la capa """
+        volfs = 0
+        for f in capcon: # recorro las fibras de la capa
+            fcon = self.fibs.con[f]
+            dl = self.fibs.dls[f]
+            d = self.fibs.ds[f]
+            # calculo la loco de la fibra de manera aproximada
+            loco = len(fcon)*dl
+            volf = loco*d
+            volfs += volf
+        # el volumen total de la capa es:
+        volc = self.L*self.L*self.Dm
+        # luego la fraccion de volumen
+        fracvol = volfs / volc
+        return fracvol
 
     def make_fibra(self, dl, dtheta):
         """ tengo que armar una lista de segmentos
@@ -337,7 +359,7 @@ class Malla(object):
         self.fibs.add_fibra(f_con, dl, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
-    def make_fibra2(self, dl, dtheta):
+    def make_fibra2(self, dl, d, dtheta):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -401,7 +423,7 @@ class Malla(object):
         # al final recorto la fibra y la almaceno
         self.nods.tipos[-1] = 1
         self.trim_fibra_at_frontera(f_con)
-        self.fibs.add_fibra(f_con, dl, dtheta)
+        self.fibs.add_fibra(f_con, dl, d, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
 

@@ -3,17 +3,22 @@ import time
 
 pi = 3.1416
 
-L = 1.0
+L = 1.0 # pongo valor 1 aca y las demas medidas las hago relativas a esta
+Dm = 0.01
 
 
-m = Mc(L)
+m = Mc(L, Dm)
 
 # =====
 # Calcular malla
 start = time.clock()
 for i in range(1): # capas
-    m.make_capa(0.05*L, pi*0.1, 100)
+    m.make_capa(0.05*L, Dm, pi*0.1, 85)
 print time.clock() - start
+
+fravol = m.calcular_fraccion_de_volumen_de_una_capa(m.caps.con[0])
+print fravol
+
 
 # start = time.clock()
 # m.intersectar_fibras()
