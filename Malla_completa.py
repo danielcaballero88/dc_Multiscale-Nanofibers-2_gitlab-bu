@@ -98,7 +98,7 @@ class Segmentos(object):
             elif dy>0:
                 theta = np.pi*.5
             else:
-                theta = -np.pi*.5
+                theta = 1.5*np.pi
         elif iguales(dy,0):
             # segmento horizontal
             if dx>0:
@@ -335,7 +335,27 @@ class Malla(object):
         fracvol = volfs / volc
         return fracvol
 
-    def make_fibra(self, dl, dtheta):
+    def calcular_orientacion_de_una_fibra(self, f):
+        """ calcula la orientacion de una fibra como el promedio
+        de las orientacions de sus segmentos
+        cada orientacion es un angulo en [0,pi) """
+        fcon = self.fibs.con[f]
+        nsegs = len(fcon)
+        theta_f = 0.
+        for s in fcon:
+            # s es un indice de segmento
+            theta_s = self.segs.thetas[s]
+            # theta_s esta en [0,pi)
+            if theta_s>=np.pi:
+                theta_s = theta_s-np.pi
+            if theta_s < 0:
+                pass
+            # ahora voy haciendo el promedio
+            theta_f += theta_s
+        theta_f = theta_f / float(nsegs)
+        return theta_f
+
+    def make_fibra(self, dl, d, dtheta):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -396,7 +416,7 @@ class Malla(object):
             # lo agrego a la fibra
             f_con.append( len(self.segs.con) -1 )
         # al terminar agrego la conectividad de la fibra a las fibras
-        self.fibs.add_fibra(f_con, dl, dtheta)
+        self.fibs.add_fibra(f_con, dl, d, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
     def make_fibra2(self, dl, d, dtheta):
@@ -419,8 +439,10 @@ class Malla(object):
         # Armo el primer segmento
         # primero busco un nodo en el contorno
         x0, y0, b0 = self.get_punto_sobre_frontera()
-        theta_abs = np.random.normal() * np.pi
-        theta_abs = 90. * np.pi/180.
+        theta_abs = np.random.rand() * 0.99 * np.pi
+        # theta_abs = 179. * np.pi/180.
+        if theta_abs >= np.pi:
+            raise ValueError("theta_abs de una fibra no comprendido en [0,pi)")
         # veo el cuadrante
         if theta_abs < np.pi*1.0e-8:
             cuad = -1 # direccion horizontal
@@ -655,6 +677,46 @@ class Malla(object):
         # aqui ya deberia tener una conectividad terminada
         return infbs_con
 
+    def calcular_orientaciones(self):
+        """ calcular las orientaciones de las fibras de toda la malla """
+        thetas_f = list()
+        for f, fcon in enumerate(self.fibs.con):
+            theta_f = self.calcular_orientacion_de_una_fibra(f)
+            thetas_f.append(theta_f)
+        return thetas_f
+
+    def calcular_distribucion_de_orientaciones(self, bindata=18, bintype="number"):
+        """ calcula la distribucion de orientaciones en la malla
+        contando las frecuencias en los bins """
+        # obtengo las orientaciones de todas las fibras
+        phis = self.calcular_orientaciones()
+        phis = np.array(phis, dtype=float)
+        # primero me fijo como di el tamano de bin
+        if bintype=="number":
+            nbins = bindata
+            wbin = np.pi / float(nbins)
+        elif bintype=="width":
+            wbin = bindata
+            nbins = int( round(180. / wbin) )
+            wbin = np.pi / float(nbins)
+        else:
+            raise ValueError
+        # ahora cuento
+        phis_m = list()
+        frecs = list()
+        for i in range(nbins):
+            phi_ini_i = 0. + float(i)*wbin
+            phi_fin_i = phi_ini_i + wbin
+            phi_med_i = (phi_ini_i + phi_fin_i)*0.5
+            mask = np.logical_and(phis>=phi_ini_i, phis<phi_fin_i)
+            frec_i = np.sum(mask)
+            # ahora guardo
+            phis_m.append(phi_med_i)
+            frecs.append(frec_i)
+        return phis_m, wbin, frecs
+
+
+
     def calcular_enrulamientos(self):
         """ calcular para todas las fibras sus longitudes de contorno y
         sus longitudes extremo a extremos (loco y lete)
@@ -720,6 +782,8 @@ class Malla(object):
             lete = calcular_longitud_de_segmento(r_ini, r_fin)
             lamsr.append( loco/lete )
         return lamsr
+
+
 
     def calcular_distribucion_de_enrulamiento_de_interfibras(self, lamr_min=None, lamr_max=None, n=10):
         """ calcular la distribucion de enrulamientos
