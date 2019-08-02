@@ -276,18 +276,58 @@ class Malla(object):
                 break
         self.caps.add_capa(capa_con)
 
+    def make_capa2(self, dl, d, dtheta, volfraction):
+        """
+        armo una capa con fibras, todas van a armarse con los
+        mismos parmetros dl y dtheta (se debe modificar para usar distribuciones)
+        se depositan fibras hasta que se supera la fraccion de volumen dictada
+        """
+        ncapas = len(self.caps.con)
+        capa_con = list()
+        i = 0
+        volc = self.L*self.L*self.Dm # volumen de la capa
+        vols_final = volfraction*volc # volumen de solido (ocupado por fibras) a alcanzar
+        vols = 0. # volumen de solido actual
+        while True:
+            i += 1
+            j = self.make_fibra2(dl, d, dtheta)
+            if j == -1:
+                i -= 1
+            else:
+                volf = self.calcular_volumen_de_una_fibra(j)
+                vols += volf
+                capa_con.append(j)
+            if vols >= vols_final:
+                break
+        self.caps.add_capa(capa_con)
+
+    def calcular_loco_de_una_fibra(self, f):
+        """ calcula la longitud de contorno de una fibra """
+        nsegs = len(self.fibs.con[f])
+        loco = 0.
+        for seg in self.fibs.con[f]:
+            n0, n1 = self.segs.con[seg]
+            r0 = self.nods.r[n0]
+            r1 = self.nods.r[n1]
+            lseg = calcular_longitud_de_segmento(r0,r1)
+            loco += lseg
+        return loco
+
+    def calcular_volumen_de_una_fibra(self, f):
+        """ calcula el volumen ocupado por una fibra """
+        loco = self.calcular_loco_de_una_fibra(f)
+        dl = self.fibs.dls[f]
+        d = self.fibs.ds[f]
+        return loco*np.pi*d*d/4.
+
+
     def calcular_fraccion_de_volumen_de_una_capa(self, capcon):
         """ calcula la fraccion de volumen de una capa como
         el volumen ocupado por fibras
         dividido el volumen total de la capa """
         volfs = 0
         for f in capcon: # recorro las fibras de la capa
-            fcon = self.fibs.con[f]
-            dl = self.fibs.dls[f]
-            d = self.fibs.ds[f]
-            # calculo la loco de la fibra de manera aproximada
-            loco = len(fcon)*dl
-            volf = loco*d
+            volf = self.calcular_volumen_de_una_fibra(f)
             volfs += volf
         # el volumen total de la capa es:
         volc = self.L*self.L*self.Dm
@@ -379,7 +419,43 @@ class Malla(object):
         # Armo el primer segmento
         # primero busco un nodo en el contorno
         x0, y0, b0 = self.get_punto_sobre_frontera()
-        theta = np.random.rand() * np.pi + b0*0.5*np.pi # angulo inicial
+        theta_abs = np.random.normal() * np.pi
+        theta_abs = 90. * np.pi/180.
+        # veo el cuadrante
+        if theta_abs < np.pi*1.0e-8:
+            cuad = -1 # direccion horizontal
+        elif np.abs(theta_abs-np.pi*0.5) < 1.0e-8:
+            cuad = -2 # direccion vertical
+        elif theta_abs < np.pi*0.5:
+            cuad = 1 # primer cuadrante
+        else:
+            cuad = 2 # segundo cuadrante
+        # ahora me fijo la relacion entre cuadrante y borde
+        if cuad == -1: # fibra horizontal
+            if b0 in (0,2):
+                return -1 # esta fibra no vale, es horizontal sobre un borde horizontal
+            elif b0 == 1:
+                theta = np.pi
+            else: #b0 == 3
+                theta = 0.
+        elif cuad == -2: # fibra vertical
+            if b0 in (1,3):
+                return -1
+            elif b0 == 0:
+                theta = 0.5*np.pi
+            else: # b0 == 2
+                theta = 1.5*np.pi
+        elif cuad == 1: # primer cuadrante
+            if b0 in (0,3):
+                theta = theta_abs
+            else: #b0 in(1,2)
+                theta = theta_abs + np.pi
+        else: # cuad == 2 segundo cuadrante
+            if b0 in (0,1):
+                theta = theta_abs
+            else: # b0 in (2,3)
+                theta = theta_abs + np.pi
+        # ya tengo el angulo del segmento
         dx = dl * np.cos(theta)
         dy = dl * np.sin(theta)
         coors.append( [x0,y0] )
@@ -675,6 +751,7 @@ class Malla(object):
         dString = "*Parametros (L) \n"
         fmt = "{:17.8e}"
         dString += fmt.format(self.L) + "\n"
+        dString += fmt.format(self.Dm) + "\n"
         fid.write(dString)
         # ---
         # escribo los nodos: indice, tipo, y coordenadas
@@ -695,12 +772,12 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # sigo con las fibras: indice, dl, dtheta, y segmentos (conectividad)
+        # sigo con las fibras: indice, dl, d, dtheta, y segmentos (conectividad)
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f, fcon in enumerate(self.fibs.con):
             dString = "{:6d}".format(f) # indice
-            dString += "{:17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.dthetas[f]) # dl y dtheta
+            dString += "{:17.8e}{:+17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.ds[f], self.fibs.dthetas[f]) # dl, d y dtheta
             dString += "".join( "{:6d}".format(val) for val in fcon ) + "\n" # conectividad
             fid.write(dString)
         # termino con las capas: indice y fibras (conectividad):
@@ -721,6 +798,7 @@ class Malla(object):
         target = "*parametros"
         ierr = find_string_in_file(fid, target, True)
         L = float( fid.next() )
+        Dm = float( fid.next() )
         # luego busco coordenadas
         target = "*coordenadas"
         ierr = find_string_in_file(fid, target, True)
@@ -745,15 +823,18 @@ class Malla(object):
         num_f = int(fid.next())
         fibs = list()
         dls = list()
+        ds = list()
         dthetas = list()
         for i in range(num_f):
             svals = fid.next().split()
             j = int(svals[0])
             dl = float(svals[1])
-            dtheta = float(svals[2])
-            fcon = [int(val) for val in svals[3:]]
+            d = float(svals[2])
+            dtheta = float(svals[3])
+            fcon = [int(val) for val in svals[4:]]
             fibs.append(fcon)
             dls.append(dl)
+            ds.append(d)
             dthetas.append(dtheta)
         # luego la capas
         target = "*capas"
@@ -766,7 +847,7 @@ class Malla(object):
             ccon = [int(val) for val in svals[1:]]
             caps.append(ccon)
         # ahora que tengo todo armo el objeto
-        malla = cls(L)
+        malla = cls(L, Dm)
         # le asigno los nodos
         for i in range(num_r):
             malla.nods.add_nodo(coors[i], tipos[i])
@@ -778,8 +859,9 @@ class Malla(object):
         for i in range(num_f):
             f_con = fibs[i]
             dl = dls[i]
+            d = ds[i]
             dtheta = dthetas[i]
-            malla.fibs.add_fibra(f_con, dl, dtheta)
+            malla.fibs.add_fibra(f_con, dl, d, dtheta)
         # le asigno las capas
         for c in range(num_c):
             c_con = caps[c]
@@ -787,7 +869,7 @@ class Malla(object):
         # listo
         return malla
 
-    def pre_graficar_bordes(self, fig, ax):
+    def pre_graficar_bordes(self, fig, ax, byn=False):
         # seteo
         margen = 0.1*self.L
         ax.set_xlim(left=0-margen, right=self.L+margen)
@@ -834,7 +916,7 @@ class Malla(object):
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None):
+    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         mi_colormap = plt.cm.rainbow
@@ -865,12 +947,16 @@ class Malla(object):
                     xx[f].append(r[0])
                     yy[f].append(r[1])
                 col = sm.to_rgba(lamsr[f])
+                if byn:
+                    col = "k"
                 grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
-        sm._A = []
-        fig.colorbar(sm)
+        return
+        if not byn:
+            sm._A = []
+            fig.colorbar(sm)
 
 
-    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None):
+    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False):
         # preparo un mapa de colores mapeable por escalar
         infbs_con = self.calcular_conectividad_de_interfibras()
         lamsr = self.calcular_enrulamientos_de_interfibras()
@@ -900,9 +986,12 @@ class Malla(object):
                 xx[i].append(r[0])
                 yy[i].append(r[1])
             col = sm.to_rgba(lamsr[i])
+            if byn:
+                col = "k"
             grafs.append( ax.plot(xx[i], yy[i], linestyle="-", marker="", label=str(i), color=col) )
-        sm._A = []
-        fig.colorbar(sm)
+        if not byn:
+            sm._A = []
+            fig.colorbar(sm)
 
     def pre_graficar_nodos_frontera(self, fig, ax):
         # dibujo las fibras (los segmentos)
@@ -948,16 +1037,16 @@ class Malla(object):
                 yy.append(self.nods.r[n][1])
         ax.plot(xx, yy, linewidth=0, marker=".", markersize=1)
 
-    def pre_graficar(self, fig, ax, lamr_min = None, lamr_max = None):
-        self.pre_graficar_bordes(fig, ax)
+    def pre_graficar(self, fig, ax, lamr_min = None, lamr_max = None, byn = False):
+        self.pre_graficar_bordes(fig, ax, byn)
         self.pre_graficar_nodos_frontera(fig, ax)
         self.pre_graficar_nodos_interseccion(fig, ax)
         self.pre_graficar_nodos_internos(fig, ax)
-        self.pre_graficar_fibras(fig, ax, lamr_min=lamr_min, lamr_max=lamr_max)
-        ax.legend(loc="upper left", numpoints=1, prop={"size":6})
+        self.pre_graficar_fibras(fig, ax, lamr_min=lamr_min, lamr_max=lamr_max, byn=byn)
+        #ax.legend(loc="upper left", numpoints=1, prop={"size":6})
 
-    def graficar(self, fig=None, ax=None, lamr_min=None, lamr_max=None):
+    def graficar(self, fig=None, ax=None, lamr_min=None, lamr_max=None, byn=False):
         if ax is None:
             fig, ax = plt.subplots()
-        self.pre_graficar(fig, ax, lamr_min, lamr_max)
+        self.pre_graficar(fig, ax, lamr_min, lamr_max, byn)
         plt.show()
