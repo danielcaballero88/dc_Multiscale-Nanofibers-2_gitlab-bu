@@ -6,17 +6,18 @@ import numpy as np
 
 pi = 3.1416
 
-L = 1.0
+L = 100.0
+Dm = 1.0
 
 
-mc = Mc(L)
+mc = Mc(L, Dm)
 
-devangle = 5. * np.pi / 180.
-dl = 0.1 * L
+devangle = 10. * np.pi / 180.
+dl = 0.05 * L
 
 start = time.clock()
 for i in range(1):
-    mc.make_capa(dl, devangle, 500)
+    mc.make_capa(dl, Dm, devangle, 100)
 print time.clock() - start
 
 # mc = Mc.leer_de_archivo("Malla.txt")
