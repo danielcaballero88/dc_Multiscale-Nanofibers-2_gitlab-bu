@@ -276,29 +276,41 @@ class Malla(object):
                 break
         self.caps.add_capa(capa_con)
 
-    def make_capa2(self, dl, d, dtheta, volfraction):
+    def make_capa2(self, dl, d, dtheta, volfraction, orient_distr=None):
         """
         armo una capa con fibras, todas van a armarse con los
         mismos parmetros dl y dtheta (se debe modificar para usar distribuciones)
         se depositan fibras hasta que se supera la fraccion de volumen dictada
         """
+        # si volfraction es int estoy dando el numero de fibras!
+        if isinstance(volfraction,int):
+            cond_fin_n = True
+            n_final = volfraction
+        else:
+            cond_fin_n = False
+            volc = self.L*self.L*self.Dm # volumen de la capa
+            vols_final = volfraction*volc # volumen de solido (ocupado por fibras) a alcanzar
+        # --
         ncapas = len(self.caps.con)
         capa_con = list()
         i = 0
-        volc = self.L*self.L*self.Dm # volumen de la capa
-        vols_final = volfraction*volc # volumen de solido (ocupado por fibras) a alcanzar
         vols = 0. # volumen de solido actual
         while True:
             i += 1
-            j = self.make_fibra2(dl, d, dtheta)
+            j = self.make_fibra2(dl, d, dtheta, orient_distr)
             if j == -1:
                 i -= 1
             else:
                 volf = self.calcular_volumen_de_una_fibra(j)
                 vols += volf
                 capa_con.append(j)
-            if vols >= vols_final:
-                break
+            # me fijo si complete la capa
+            if cond_fin_n:
+                if i == n_final:
+                    break
+            else:
+                if vols >= vols_final:
+                    break
         self.caps.add_capa(capa_con)
 
     def calcular_loco_de_una_fibra(self, f):
@@ -419,7 +431,7 @@ class Malla(object):
         self.fibs.add_fibra(f_con, dl, d, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
-    def make_fibra2(self, dl, d, dtheta):
+    def make_fibra2(self, dl, d, dtheta, orient_distr=None):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
         son globales en la malla, cada nodo nuevo tiene un indice +1 del anterior
@@ -439,9 +451,17 @@ class Malla(object):
         # Armo el primer segmento
         # primero busco un nodo en el contorno
         x0, y0, b0 = self.get_punto_sobre_frontera()
-        theta_abs = np.random.rand() * 0.99 * np.pi
+        if orient_distr is None:
+            theta_abs = np.random.rand() * np.pi
+        else:
+            distr = orient_distr[0]
+            loc = orient_distr[1]
+            scale = orient_distr[2]
+            theta_abs = distr(loc=loc, scale=scale) * np.pi
         # theta_abs = 179. * np.pi/180.
-        if theta_abs >= np.pi:
+        if theta_abs == np.pi:
+            theta_abs = 0.
+        elif theta_abs > np.pi:
             raise ValueError("theta_abs de una fibra no comprendido en [0,pi)")
         # veo el cuadrante
         if theta_abs < np.pi*1.0e-8:
@@ -822,7 +842,7 @@ class Malla(object):
         dString = "*Coordenadas \n" + str(len(self.nods.r)) + "\n"
         fid.write(dString)
         for n in range( len(self.nods.r) ):
-            dString = "{:6d}".format(n)
+            dString = "{:12d}".format(n)
             dString += "{:2d}".format(self.nods.tipos[n])
             dString += "".join( "{:+17.8e}".format(val) for val in self.nods.r[n] ) + "\n"
             fid.write(dString)
@@ -832,7 +852,7 @@ class Malla(object):
         fid.write(dString)
         for s in range( len(self.segs.con) ):
             n0, n1 = self.segs.con[s]
-            fmt = "{:6d}"*3
+            fmt = "{:12d}"*3
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
@@ -840,16 +860,16 @@ class Malla(object):
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f, fcon in enumerate(self.fibs.con):
-            dString = "{:6d}".format(f) # indice
+            dString = "{:12d}".format(f) # indice
             dString += "{:17.8e}{:+17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.ds[f], self.fibs.dthetas[f]) # dl, d y dtheta
-            dString += "".join( "{:6d}".format(val) for val in fcon ) + "\n" # conectividad
+            dString += "".join( "{:12d}".format(val) for val in fcon ) + "\n" # conectividad
             fid.write(dString)
         # termino con las capas: indice y fibras (conectividad):
         dString = "*Capas \n" + str( len(self.caps.con) ) + "\n"
         fid.write(dString)
         for c, ccon in enumerate(self.caps.con):
-            dString = "{:+6d}".format(c) # indice
-            dString += "".join( "{:6d}".format(val) for val in ccon ) + "\n" # conectividad
+            dString = "{:12d}".format(c) # indice
+            dString += "".join( "{:12d}".format(val) for val in ccon ) + "\n" # conectividad
             fid.write(dString)
         # ---
         # termine
@@ -951,9 +971,12 @@ class Malla(object):
         plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":")
 
 
-    def pre_graficar_capas(self, fig, ax):
+    def pre_graficar_capas(self, fig, ax, byn=True):
         nc = len(self.caps.con)
-        mi_colormap = plt.cm.raingbow
+        if byn:
+            mi_colormap = plt.cm.gray
+        else:
+            mi_colormap = plt.cm.rainbow
         sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=nc-1))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
@@ -976,11 +999,11 @@ class Malla(object):
                     r = self.nods.r[n] # coordenadas de ese nodo
                     xx[f].append(r[0])
                     yy[f].append(r[1])
-                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=sm.to_rgba[c]) )
+                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=sm.to_rgba(nc-1-c) ) )
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False):
+    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         mi_colormap = plt.cm.rainbow
@@ -1014,8 +1037,7 @@ class Malla(object):
                 if byn:
                     col = "k"
                 grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
-        return
-        if not byn:
+        if barracolor and not byn:
             sm._A = []
             fig.colorbar(sm)
 
