@@ -1,32 +1,39 @@
 from Malla_completa import Malla as Mc
 import time
 import numpy as np
-
-L = 190. # micrones
-Dm = 1.0
-
-diam = Dm
-seglen = 0.01*L
-devang = 5. * np.pi / 180. # 5 grados
+import matplotlib.pyplot as plt
 
 # fid1 = open("mallas/datos.txt", "w")
 
 # =====
 # Calcular mallas y escribirlas
-Ls = np.arange(100, 100+1, 10, dtype=float)
-for L in Ls:
-    for nummalla in range(1,11):
-        m = Mc(L, Dm)
-        for i in range(1,2): # capas
-            m.make_capa2(seglen, Dm, devang, 0.3)
-            volfra = m.calcular_fraccion_de_volumen_de_una_capa(m.caps.con[-1])
-            numfibs = len(m.caps.con[0])
-            print "{:08.4f} {:6d} {:10.5f} {:6d}".format(L, nummalla, volfra, numfibs)
-        # guardo en archivo
-        # nombrearchivo = "mallas/L_" + "{:08.4f}".format(L) + "_nm_" + "{:02d}".format(nummalla) + ".txt"
-        nombrearchivo = "mallas/devang_" + "{:06.4f}".format(devang*180./np.pi) + "_nm_" + "{:02d}".format(nummalla) + ".txt"
-        # fid1.write( "{:08.4f}{:6d}{:10.5f}{:6d}".format(L,nummalla,volfra,numfibs) + "\n")
-        m.guardar_en_archivo(nombrearchivo)
+L = 100.0
+Dm = 1.0
+devangle = 10. * np.pi / 180.
+dl = 0.02 * L
+nfibs = 20
+
+
+dls_rel = (0.02, 0.03, 0.04)
+devangs_deg = (10., 15., 20.)
+
+dls_rel = [0.04]
+devangs_deg = [20.]
+
+for dl_rel in dls_rel:
+    dl = dl_rel * L
+    for devang_deg in devangs_deg:
+        devang = devang_deg*np.pi/180.
+        for nm in range(1,2):
+            print "{:05.2f}  {:05.2f}  {:07d}".format(dl_rel,devang_deg,nm)
+            mc = Mc(L, Dm)
+            for i in range(20):
+                mc.make_capa2(dl, Dm, devang, nfibs)
+            nombrearchivo = "mallas/dl_" + "{:05.2f}".format(dl_rel) + \
+                            "_devang_" + "{:05.2f}".format(devang_deg) + \
+                            "_nm_" + "{:07d}".format(nm) + \
+                            ".txt"
+            # mc.guardar_en_archivo(nombrearchivo)
 
 # fid1.close()
 
@@ -46,4 +53,7 @@ for L in Ls:
 # for i, infb_con in enumerate(infbs_con):
 #     print i, ":", infb_con
 
-m.graficar(lamr_min=None, lamr_max=None)
+fig, ax = plt.subplots()
+mc.pre_graficar_capas(fig, ax, byn=True)
+plt.show()
+# mc.graficar(lamr_min=None, lamr_max=None, byn=True)

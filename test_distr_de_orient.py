@@ -10,11 +10,17 @@ Dm = 1.0
 
 mc = Mc(L, Dm)
 
-devangle = 0. * np.pi / 180.
-dl = 0.05 * L
+devangle = 2.5 * np.pi / 180.
+dl = 0.01 * L
 
-for i in range(10):
-    mc.make_capa2(dl, Dm, devangle, 0.3)
+def return_scalar(loc,scale):
+    return 0.5
+
+orientation_distribution = (return_scalar, 0.5, 0.1)
+orientation_distribution = (np.random.normal, 0.5, 0.25)
+
+for i in range(5):
+    mc.make_capa2(dl, Dm, devangle, 0.3, orient_distr=orientation_distribution)
 
 print len(mc.fibs.con)
 
@@ -44,14 +50,11 @@ print index
 
 fig1, ax1 = plt.subplots()
 mc.pre_graficar_bordes(fig1, ax1)
-mc.pre_graficar_interfibras(fig1, ax1, lamr_min = 1.0, lamr_max = 1.3)
+mc.pre_graficar_fibras(fig1, ax1, lamr_min = 1.0, lamr_max = 1.3, byn=True)
 mc.pre_graficar_nodos_interseccion(fig1, ax1)
 
-fig2, ax2 = plt.subplots()
-mc.pre_graficar_bordes(fig2, ax2)
-mc.pre_graficar_fibras(fig2, ax2, lamr_min=1.0, lamr_max=1.3)
-mc.pre_graficar_nodos_interseccion(fig2, ax2)
 
+frecs = np.array(frecs, dtype=float) / float(np.sum(frecs))
 fig3, ax3 = plt.subplots()
 bars1 = ax3.bar(phis, frecs, binwidth*0.5)
 
