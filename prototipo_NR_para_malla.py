@@ -40,11 +40,11 @@ class Mallita(object):
         # parametros constitutivos
         self.param = np.array(
             [
-                [1.0, 10., .1],
-                [1.0, 10., .1],
-                [1.0, 10., .1],
-                [1.0, 10., .1],
-                [1.5, 10., .1]
+                [1.1, 10., .01],
+                [1.1, 10., .01],
+                [1.1, 10., .01],
+                [1.1, 10., .01],
+                [1.1, 10., .01]
             ],
             dtype=float
         )
@@ -175,7 +175,18 @@ class Mallita(object):
 
 m = Mallita()
 
-m.r[2,:] = [1.1, 1.1]
+# m.r[2,:] = [1.1, 1.1]
+# m.r[1,:] = [1.1, 0.1]
+
+Fmacro = np.array(
+    [
+        [1.1, 0.0],
+        [0.0, 1.0]
+    ],
+    dtype=float
+)
+
+m.r = np.matmul(m.r0, np.transpose(Fmacro))
 
 F = m.calcular_fuerzas()
 print "F"
@@ -203,10 +214,10 @@ print "dr"
 print dr
 print "---"
 
-# bb = np.matmul(A,dr)
-# print "bb"
-# print bb
-# print "---"
+residuo = np.matmul(A,dr) - b
+print "residuo"
+print residuo
+print "---"
 
 
 
@@ -289,4 +300,6 @@ for f, (n0,n1) in enumerate(m.fibras):
     x0, y0 = m.r[n0]
     dx, dy = m.r[n1] - m.r[n0]
     ax.arrow(x0,y0,dx,dy)
+ax.set_xlim([-0.5, 1.5])
+ax.set_ylim([-0.5, 1.5])
 plt.show()
