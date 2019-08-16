@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 a = np.array(
     [
@@ -10,15 +11,11 @@ a = np.array(
     ]
 )
 
-con = [1,2,4]
+b = a.reshape(-1,)
+print b
 
-b = a[con]
-b_in = b[1:-1]
+m = np.logical_or(b<4, b>8)
+print m
 
-c = np.array([10, 11])
-
-b_in = c.reshape(-1,2)
-
-a[con[1:-1]] = b_in
-
-print a
+c = b[m]
+print c
