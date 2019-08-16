@@ -1,21 +1,27 @@
 import numpy as np
 from matplotlib import cm, pyplot as plt
 from Aux import find_string_in_file, calcular_longitud_de_segmento
+import scipy.optimize as opt
+
 
 class Nodos(object):
-    def __init__(self, n, r0, tipos):
+    def __init__(self, n, r0, tipos, r0full):
         self.n = n
         self.r0 = np.array(r0, dtype=float)
         self.r = self.r0.copy()
+        self.r0full = np.array(r0full, dtype=float)
+        self.rfull = self.r0full.copy()
         self.t = np.array(tipos, dtype=int)
         self.mf = self.t == 1
         self.mi = self.t == 2
 
 class Fibras(object):
-    def __init__(self, n, con, param):
+    def __init__(self, n, con, param, confull):
         self.n = n
         self.con = np.array(con, dtype=int)
         self.param = np.array(param, dtype=float)
+        self.lamsr = self.param[:,0,None]
+        self.confull = confull # este sera una lista de listas
         self.longs0 = None
         self.drs0 = None
         self.__mr = np.zeros( (n,1), dtype=bool)
@@ -68,6 +74,74 @@ class Fibras(object):
         else:
             return dr, long, lam, fza, fzav
 
+    def calcular_nodos_internos(self, r, r0, rfull, r0full):
+        print "calculando nodos internos: "
+        for f in range(self.n):
+            print "{:6d}.".format(f),
+            f_con = self.confull[f]
+            n_in = len(f_con) - 2
+            n0,n1 = self.con[f]
+            rf_ini = r[n0]
+            rf_fin = r[n1]
+            if n_in == 0:
+                rfull[f_con[0]] = rf_ini
+                rfull[f_con[-1]] = rf_fin
+                continue
+            rf = rfull[f_con]
+            rf_in = rf[1:-1].reshape(-1,1)
+
+            rf0 = r0full[f_con]
+            P1 = opt.minimize( self.energia_potencial, rf_in, (f, rf_ini, rf_fin, rf0))
+            rf_in = P1.x.reshape(-1,2)
+            rfull[f_con[0]] = rf_ini
+            rfull[f_con[-1]] = rf_fin
+            rfull[f_con[1:-1]] = rf_in
+        print
+
+    def energia_potencial(self, r_in, f, r_ini, r_fin, r0):
+        """ calcula la energia potencial elastica de una fibra
+        cuyos nodos tienen coordenadas rin
+        notar que rin tiene dimension (2*nodos,1)
+        obviamente es importante que la fibra no este compuesta de un solo segmento
+        en ese caso no tendria ningun nodo interior """
+        # el array r_in debe ser de dimensiones (2*n_in,) debido a que es una entrada de scipy.optimize.minimize
+        # por eso internamente lo convierto a (n_in,2)
+        r_inL = r_in.reshape(-1,2)
+        n_in = len(r_inL)
+        rL = np.zeros( (2+n_in,2), dtype=float ) # este va a ser el vector de posiciones completo (incluye nodos inicial y final)
+        rL[0] = r_ini
+        rL[-1] = r_fin
+        rL[1:-1] = r_inL
+        # vector end-to-end, longitud end-to-end y lambda
+        drete = rL[-1] - rL[0]
+        lete = np.sqrt(np.sum(drete*drete))
+        lam = lete / self.longs0[f]
+        # vectores de cada segmento inicial y actual
+        drs0 = r0[1:] - r0[:-1]
+        drs = rL[1:] - rL[:-1]
+        # longitudes de cada segmento inicial y actual
+        dls0 = np.sqrt(np.sum(drs0*drs0,axis=1,keepdims=True))
+        dls = np.sqrt(np.sum(drs*drs,axis=1,keepdims=True))
+        # angulos entre segmentos inicial y actual
+        drs0drs0 = np.sum(drs0[1:]*drs0[:-1], axis=1, keepdims=True)
+        cos_phis0 = drs0drs0 / dls0[1:] / dls0[:-1]
+        phis0 = np.arccos(cos_phis0 - 1.e-8*np.sign(cos_phis0))
+        drsdrs = np.sum(drs[1:]*drs[:-1], axis=1, keepdims=True)
+        cos_phis = drsdrs / dls[1:] / dls[:-1]
+        phis = np.arccos(cos_phis- 1.e-8*np.sign(cos_phis))
+        # energia potencial por traccion o compresion
+        ddls = dls - dls0
+        Epot = 1000. * np.sum(ddls*ddls)
+        # energia por flexion
+        lamr = self.param[f,0]
+        dphis = phis - phis0
+        if lam < lamr:
+            k2 = 100.
+        else:
+            k2 = 1.
+        Epot += k2 * np.sum(dphis*dphis)
+        return Epot
+
 class Mallita(object):
     def __init__(self, nodos, fibras):
         self.nodos = nodos
@@ -95,15 +169,18 @@ class Mallita(object):
         fibs = mc.fibs.con
         # los voy a mapear a otras listas propias de la malla simplificada
         ms_nods_r = list() # coordenadas de la malla simplificada
+        ms_nods_rfull = np.array(coors, dtype=float)
         ms_nods_t = list() # tipos de los nodos de la malla simplificada
         ms_nods_n = list() # indices originales de los nodos
         ms_sfbs_c = list() # conectividad de subfibras de la malla simplificada
+        ms_sfbs_cfull = list() # conectividad de subfibras incluyendo nodos interiores
         ms_sfbs_lc = list() # largo de las subfibras siguiendo el contorno de los segmentos
         ms_sfbs_le = list() # largo de las subfibras de extremo a extremo
         # recorro cada fibra:
         for f in range(len(fibs)): # f es el indice de cada fibra en la malla completa
             # tengo una nueva subfibra
             new_sfb = [0, 0] # por ahora esta vacia
+            new_sfb_full = list()
             # agrego el primer nodo
             s = fibs[f][0] # segmento 0 de la fibra f
             n0 = segs[s][0] # nodo 0 del segmento s
@@ -112,6 +189,7 @@ class Mallita(object):
             ms_nods_n.append( n0 )
             # lo agrego a la nueva subfibra como su primer nodo
             new_sfb[0] = ms_nods_n.index(n0)   # es el nodo recien agregado a la lista de nodos
+            new_sfb_full.append(n0)
             assert ms_nods_t[-1] == 1
             # recorro el resto de los nodos de la fibra para agregar los nodos intereccion
             loco = 0. # aca voy sumando el largo de los segmentos que componen la subfibra (loco = longitud de contorno)
@@ -120,6 +198,7 @@ class Mallita(object):
                 s = fibs[f][js] # s es el indice de cada segmento en la malla original (numeracion global)
                 n0 = segs[s][0] # primer nodo del segmento
                 n1 = segs[s][1] # nodo final del segmento
+                new_sfb_full.append(n1)
                 r0 = coors[n0]
                 r1 = coors[n1]
                 dx = r1[0] - r0[0]
@@ -138,6 +217,7 @@ class Mallita(object):
                     new_sfb[1] = ms_nods_n.index(n1)
                     # y agrega la conectividad de la subfibra a la lista
                     ms_sfbs_c.append( new_sfb )
+                    ms_sfbs_cfull.append( new_sfb_full )
                     # ademas agrego la longitud de contorno y la longitud de extremos a extremo
                     ms_sfbs_lc.append( loco )
                     n_e1 = new_sfb[1] # nodo extremo final de la subfibra
@@ -150,12 +230,14 @@ class Mallita(object):
                     if tipos[n1] == 2:
                         loco = 0.
                         new_sfb = [0, 0]
+                        new_sfb_full = list()
                         new_sfb[0] = ms_nods_n.index(n1) # el primer nodo de la siguiente subfibra sera el ultimo nodo de la anterior
+                        new_sfb_full.append(n1)
         # ---
         # ahora coloco las variables en mi objeto malla simplificada
         # nodos con coordenadas y tipos
         n_nods = len(ms_nods_r)
-        nodos = Nodos(n_nods, ms_nods_r, ms_nods_t)
+        nodos = Nodos(n_nods, ms_nods_r, ms_nods_t, ms_nods_rfull)
         # subfibras
         n_sfbs = len(ms_sfbs_c)
         locos = np.array( ms_sfbs_lc, dtype=float )
@@ -164,7 +246,7 @@ class Mallita(object):
         param = np.zeros( (n_sfbs,len(param_in)+1), dtype=float )
         param[:,0] = lams_r
         param[:,1:] = param_in
-        fibras = Fibras(n_sfbs, ms_sfbs_c, param)
+        fibras = Fibras(n_sfbs, ms_sfbs_c, param, ms_sfbs_cfull)
         # mallita
         m = Mallita(nodos, fibras)
         return m
@@ -175,6 +257,12 @@ class Mallita(object):
 
     def deformar_frontera(self, F):
         self.nodos.r[self.nodos.mf] = np.matmul(self.nodos.r0[self.nodos.mf], np.transpose(F))
+
+    def deformar_afin(self, F):
+        self.nodos.r = np.matmul(self.nodos.r0, np.transpose(F))
+
+    def deformar_internos_fibras(self):
+        self.fibras.calcular_nodos_internos(self.nodos.r, self.nodos.r0, self.nodos.rfull, self.nodos.r0full)
 
     def calcular_dr(self):
         dr = np.zeros( np.shape(self.nodos.r), dtype=float )
@@ -295,6 +383,56 @@ class Mallita(object):
             x1,y1 = self.nodos.r[n1]
             c = sm.to_rgba(lams[f])
             ax.plot([x0,x1], [y0,y1], ls="-", c="k")
+        sm._A = []
+        fig.colorbar(sm)
+
+    def pre_graficar_full_0(self, fig, ax, lamr_min=None, lamr_max=None):
+        mi_cm = plt.cm.rainbow
+        lamsr = self.fibras.param[:,0]
+        if lamr_min is None:
+            lamr_min = np.min(lamsr)
+        if lamr_max is None:
+            lamr_max = np.max(lamsr)
+        sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        for f, nods in enumerate(self.fibras.confull):
+            # linea inicial
+            xx0 = list()
+            yy0 = list()
+            for nod in nods:
+                x0,y0 = self.nodos.r0full[nod]
+                xx0.append(x0)
+                yy0.append(y0)
+            c = sm.to_rgba(lamsr[f])
+            ax.plot(xx0, yy0, ls="--", c=c)
+        sm._A = []
+        fig.colorbar(sm)
+
+    def pre_graficar_full(self, fig, ax, lam_min=None, lam_max=None, initial=True):
+        mi_cm = plt.cm.rainbow
+        drs, longs, lams = self.fibras.calcular_drs_longs_lams(self.nodos.r)
+        if lam_min is None:
+            lam_min = np.min(lams)
+        if lam_max is None:
+            lam_max = np.max(lams)
+        sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        for f, nods in enumerate(self.fibras.confull):
+            # linea inicial
+            xx0 = list()
+            yy0 = list()
+            for nod in nods:
+                x0,y0 = self.nodos.r0full[nod]
+                xx0.append(x0)
+                yy0.append(y0)
+            ax.plot(xx0, yy0, ls="--", c="gray")
+            # linea inicial
+            xx = list()
+            yy = list()
+            for nod in nods:
+                x,y = self.nodos.rfull[nod]
+                xx.append(x)
+                yy.append(y)
+            c = sm.to_rgba(lams[f])
+            ax.plot(xx, yy, ls="--", c="k")
         sm._A = []
         fig.colorbar(sm)
 
