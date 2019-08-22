@@ -114,8 +114,7 @@ def calcular_interseccion_entre_segmentos(r00, r01, r10, r11):
         elif theta_rel<0.:
             theta_rel += 2.*np.pi
     # me fijo que j1 no sea verticales en el sistema intrinseco a j0 (para no manejar pendientes infinitas luego)
-    m_rel_inf = iguales(theta_rel, np.pi*0.5, np.pi*1.0e-8) or iguales(theta_rel, -np.pi*0.5, np.pi*1.0e-8)
-
+    m_rel_inf = iguales(theta_rel, np.pi*0.5, np.pi*1.0e-8) or iguales(theta_rel, np.pi*1.5, np.pi*1.0e-8)
     # coordenadas en (chi,eta) de los nodos del segmento j1
     C0 = np.cos(theta0)
     S0 = np.sin(theta0)

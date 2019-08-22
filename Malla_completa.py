@@ -51,7 +51,10 @@ class Segmentos(object):
         (con todos los nodos hasta el momento de crear este segmento esta bien,
         alcanza con que esten presentes en la lista los dos nodos de seg_con) """
         self.con.append(seg_con)
-        longitud, angulo = self.calcular_long_y_theta(seg_con, coors)
+        try:
+            longitud, angulo = self.calcular_long_y_theta(seg_con, coors)
+        except ValueError:
+            raise ValueError("Error, segmento de longitud nula!!")
         self.thetas.append(angulo)
         self.longs.append(longitud)
 
@@ -749,12 +752,18 @@ class Malla(object):
                 n0, n1 = scon
                 r0 = self.nods.r[n0]
                 r1 = self.nods.r[n1]
-                loco += calcular_longitud_de_segmento(r0, r1)
+                try:
+                    loco += calcular_longitud_de_segmento(r0, r1)
+                except ValueError:
+                    raise ValueError("Error, segmento de longitud nula!!")
             n_ini = self.segs.con[fcon[0]][0]
             n_fin = self.segs.con[fcon[-1]][1]
             r_ini = self.nods.r[n_ini]
             r_fin = self.nods.r[n_fin]
-            lete = calcular_longitud_de_segmento(r_ini, r_fin)
+            try:
+                lete = calcular_longitud_de_segmento(r_ini, r_fin)
+            except ValueError:
+                raise ValueError("Error, lete de longitud nula!!")
             lamsr.append( loco/lete )
         return lamsr
 
@@ -862,6 +871,7 @@ class Malla(object):
         for f, fcon in enumerate(self.fibs.con):
             dString = "{:12d}".format(f) # indice
             dString += "{:17.8e}{:+17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.ds[f], self.fibs.dthetas[f]) # dl, d y dtheta
+            dString += "{:12d}".format(len(fcon)) # indice
             dString += "".join( "{:12d}".format(val) for val in fcon ) + "\n" # conectividad
             fid.write(dString)
         # termino con las capas: indice y fibras (conectividad):
@@ -869,6 +879,7 @@ class Malla(object):
         fid.write(dString)
         for c, ccon in enumerate(self.caps.con):
             dString = "{:12d}".format(c) # indice
+            dString += "{:12d}".format(len(ccon)) # indice
             dString += "".join( "{:12d}".format(val) for val in ccon ) + "\n" # conectividad
             fid.write(dString)
         # ---
@@ -915,7 +926,8 @@ class Malla(object):
             dl = float(svals[1])
             d = float(svals[2])
             dtheta = float(svals[3])
-            fcon = [int(val) for val in svals[4:]]
+            nsegsf = int(svals[4])
+            fcon = [int(val) for val in svals[5:]]
             fibs.append(fcon)
             dls.append(dl)
             ds.append(d)
@@ -928,7 +940,8 @@ class Malla(object):
         for c in range(num_c):
             svals = fid.next().split()
             j = int(svals[0])
-            ccon = [int(val) for val in svals[1:]]
+            nfibsc = int(svals[1])
+            ccon = [int(val) for val in svals[2:]]
             caps.append(ccon)
         # ahora que tengo todo armo el objeto
         malla = cls(L, Dm)
@@ -938,7 +951,10 @@ class Malla(object):
         # le asigno los segmentos
         for i in range(num_s):
             s_con = segs[i]
-            malla.segs.add_segmento(s_con, coors)
+            try:
+                malla.segs.add_segmento(s_con, coors)
+            except ValueError:
+                raise ValueError("Error, segmento de longitud nula!!")
         # le asigno las fibras
         for i in range(num_f):
             f_con = fibs[i]
@@ -1003,15 +1019,18 @@ class Malla(object):
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True):
+    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="lamr"):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         mi_colormap = plt.cm.rainbow
-        if lamr_min is None:
-            lamr_min = np.min(lamsr)
-        if lamr_max is None:
-            lamr_max = np.max(lamsr)
-        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        if color_por == "lamr":
+            if lamr_min is None:
+                lamr_min = np.min(lamsr)
+            if lamr_max is None:
+                lamr_max = np.max(lamsr)
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        elif color_por == "fibra":
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=len(self.fibs.con)-1))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -1033,7 +1052,10 @@ class Malla(object):
                     r = self.nods.r[n] # coordenadas de ese nodo
                     xx[f].append(r[0])
                     yy[f].append(r[1])
-                col = sm.to_rgba(lamsr[f])
+                if color_por == "lamr":
+                    col = sm.to_rgba(lamsr[f])
+                elif color_por =="fibra":
+                    col = sm.to_rgba(f)
                 if byn:
                     col = "k"
                 grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
