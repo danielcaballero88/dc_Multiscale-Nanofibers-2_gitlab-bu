@@ -865,12 +865,12 @@ class Malla(object):
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
         # ---
-        # sigo con las fibras: indice, dl, d, dtheta, y segmentos (conectividad)
+        # sigo con las fibras: indice, dl, d, dtheta, nsegs_f, y segmentos (conectividad)
         dString = "*Fibras \n" + str( len(self.fibs.con) ) + "\n"
         fid.write(dString)
         for f, fcon in enumerate(self.fibs.con):
             dString = "{:12d}".format(f) # indice
-            dString += "{:17.8e}{:+17.8e}{:+17.8e}".format(self.fibs.dls[f], self.fibs.ds[f], self.fibs.dthetas[f]) # dl, d y dtheta
+            dString += "{:17.8e}{:17.8e}{:17.8e}".format(self.fibs.dls[f], self.fibs.ds[f], self.fibs.dthetas[f]) # dl, d y dtheta
             dString += "{:12d}".format(len(fcon)) # indice
             dString += "".join( "{:12d}".format(val) for val in fcon ) + "\n" # conectividad
             fid.write(dString)
@@ -1131,7 +1131,7 @@ class Malla(object):
             if self.nods.tipos[n] == 2:
                 xx.append(self.nods.r[n][0])
                 yy.append(self.nods.r[n][1])
-        ax.plot(xx, yy, linewidth=0, marker="s", mec="k")
+        ax.plot(xx, yy, linewidth=0, marker=".", mec="k")
 
     def pre_graficar_nodos_internos(self, fig, ax):
         # dibujo las fibras (los segmentos)

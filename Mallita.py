@@ -12,32 +12,36 @@ class Nodos(object):
         self.mi = self.t == 2
 
 class Fibras(object):
-    def __init__(self, n, con, param):
+    def __init__(self, n, con, ds, letes0, lamsr, param):
         self.n = n
         self.con = np.array(con, dtype=int)
+        self.ds = np.array(ds, dtype=float) # diametros
+        self.letes0 = np.array(letes0, dtype=float)
+        self.lamsr = np.array(lamsr, dtype=float)
         self.param = np.array(param, dtype=float)
-        self.longs0 = None
         self.drs0 = None
         self.__mr = np.zeros( (n,1), dtype=bool)
         self.__me = np.zeros( (n,1), dtype=bool)
         self.__fzas = np.zeros( (n,1), dtype=float )
         self.__fzasv = np.zeros( (n,2), dtype=float )
 
-    def calcular_drs0_longs0_fzasr(self, r0):
+    def calcular_drs0(self,r0):
         self.drs0 = r0[ self.con[:,1] ] - r0[ self.con[:,0] ]
-        self.longs0 = np.sqrt( np.sum( self.drs0*self.drs0, axis=1, keepdims=True ) )
-        self.fzas_r = np.zeros( (self.n,2), dtype=float )
-        self.fzas_r = self.param[:,2,None] * (self.param[:,0,None] - 1.)
+        return self.drs0
 
-    def calcular_drs_longs_lams(self, r):
+    def calcular_fzasr(self):
+        self.fzas_r = np.zeros( (self.n,2), dtype=float )
+        self.fzas_r = self.param[:,2,None] * (self.lamsr - 1.)
+
+    def calcular_drs_letes_lams(self, r):
         drs = r[ self.con[:,1] ] - r[ self.con[:,0] ]
         longs = np.sqrt( np.sum( drs*drs, axis=1, keepdims=True ) )
-        lams = longs / self.longs0
+        lams = longs / self.letes0[:,None]
         return drs, longs, lams
 
     def calcular_fuerzas(self, r, longout=False):
-        drs, longs, lams = self.calcular_drs_longs_lams(r)
-        lams_r = self.param[:,0,None]
+        drs, longs, lams = self.calcular_drs_letes_lams(r)
+        lams_r = self.lamsr
         ks1 = self.param[:,1,None]
         ks2 = self.param[:,2,None]
         self.__mr = np.greater(lams, lams_r) # mask rectas
@@ -55,8 +59,9 @@ class Fibras(object):
     def calcular_fuerza(self, f, r_n0, r_n1, longout=False):
         dr = r_n1 - r_n0
         long = np.sqrt(np.sum(dr*dr))
-        lam = long/self.longs0[f]
-        lam_r, k1, k2 = self.param[f]
+        lam = long/self.letes0[f]
+        lam_r = self.lamsr[f]
+        k1, k2 = self.param[f]
         fza_r = k2*(lam_r-1.)
         if lam <= lam_r:
             fza = k2*(lam-1.)
@@ -69,10 +74,12 @@ class Fibras(object):
             return dr, long, lam, fza, fzav
 
 class Mallita(object):
-    def __init__(self, nodos, fibras):
+    def __init__(self, L, Dm, nodos, fibras):
+        self.L = L
+        self.Dm = Dm
         self.nodos = nodos
         self.fibras = fibras
-        self.fibras.calcular_drs0_longs0_fzasr(self.nodos.r0)
+        # self.fibras.calcular_drs0_letes0_fzasr(self.nodos.r0)
         self.__delta = 1.e-4
         self.__delta21 = 1. / (2.*self.__delta)
         self.__deltax = self.__delta * np.array( [1., 0.], dtype=float )
@@ -89,6 +96,7 @@ class Mallita(object):
         # obtengo lo que necesito de la malla completa
         # recordar que en la malla completa los objetos suelen ser listas (no arrays de numpy)
         L = mc.L
+        Dm = mc.Dm
         coors = mc.nods.r
         tipos = mc.nods.tipos
         segs = mc.segs.con
@@ -98,6 +106,7 @@ class Mallita(object):
         ms_nods_t = list() # tipos de los nodos de la malla simplificada
         ms_nods_n = list() # indices originales de los nodos
         ms_sfbs_c = list() # conectividad de subfibras de la malla simplificada
+        ms_sfbs_ds = list()
         ms_sfbs_lc = list() # largo de las subfibras siguiendo el contorno de los segmentos
         ms_sfbs_le = list() # largo de las subfibras de extremo a extremo
         # recorro cada fibra:
@@ -138,6 +147,7 @@ class Mallita(object):
                     new_sfb[1] = ms_nods_n.index(n1)
                     # y agrega la conectividad de la subfibra a la lista
                     ms_sfbs_c.append( new_sfb )
+                    ms_sfbs_ds.append( mc.fibs.ds[f] )
                     # ademas agrego la longitud de contorno y la longitud de extremos a extremo
                     ms_sfbs_lc.append( loco )
                     n_e1 = new_sfb[1] # nodo extremo final de la subfibra
@@ -161,13 +171,104 @@ class Mallita(object):
         locos = np.array( ms_sfbs_lc, dtype=float )
         letes = np.array( ms_sfbs_le, dtype=float )
         lams_r = locos / letes
-        param = np.zeros( (n_sfbs,len(param_in)+1), dtype=float )
-        param[:,0] = lams_r
-        param[:,1:] = param_in
-        fibras = Fibras(n_sfbs, ms_sfbs_c, param)
+        param = np.zeros( (n_sfbs,len(param_in)), dtype=float )
+        param[:,0:] = param_in
+        fibras = Fibras(n_sfbs, ms_sfbs_c, ms_sfbs_ds, letes, lams_r, param)
         # mallita
-        m = Mallita(nodos, fibras)
+        m = Mallita(L, Dm, nodos, fibras)
         return m
+
+    @classmethod
+    def leer_desde_archivo(self, nomarchivo):
+        fid = open(nomarchivo, 'r')
+        # primero leo los parametros
+        target = "*parametros"
+        ierr = find_string_in_file(fid, target, True)
+        L = float( fid.next() )
+        Dm = float( fid.next() )
+        nparam = int( fid.next() )
+        svals = fid.next().split()
+        param_in = [float(val) for val in svals]
+        # luego busco coordenadas
+        target = "*coordenadas"
+        ierr = find_string_in_file(fid, target, True)
+        num_r = int(fid.next())
+        coors0 = list()
+        coors = list()
+        tipos = list()
+        for i in range(num_r):
+            j, t, x0, y0, x, y = (float(val) for val in fid.next().split())
+            tipos.append(int(t))
+            coors0.append([x0,y0])
+            coors.append([x,y])
+        # luego las fibras
+        target = "*fibras"
+        ierr = find_string_in_file(fid, target, True)
+        num_f = int(fid.next())
+        fibs = list()
+        ds = list()
+        letes0 = list()
+        lamsr = list()
+        for i in range(num_f):
+            svals = fid.next().split()
+            j = int(svals[0])
+            d = float(svals[1])
+            lete0 = float(svals[2])
+            lamr0 = float(svals[3])
+            n0 = int(svals[4])
+            n1 = int(svals[5])
+            fibs.append([n0,n1])
+            ds.append(d)
+            letes0.append(lete0)
+            lamsr.append(lamr0)
+        fid.close()
+         # ---
+        # ahora coloco las variables en mi objeto malla simplificada
+        # nodos con coordenadas y tipos
+        nodos = Nodos(num_r, coors0, tipos)
+        nodos.r = np.array(coors, dtype=float)
+        # subfibras
+        letes0 = np.array( letes0, dtype=float )
+        lamsr = np.array( lamsr, dtype=float )
+        locos = letes0*lamsr
+        param = np.zeros( (num_f,nparam), dtype=float )
+        param[:,0:] = param_in
+        fibras = Fibras(num_f, fibs, ds, letes0, lamsr, param)
+        # mallita
+        m = Mallita(L, Dm, nodos, fibras)
+        return m
+
+    def escribir_en_archivo(self, nomarchivo):
+        fid = open(nomarchivo, "w")
+        # primero escribo L, dl y dtheta
+        dString = "*Parametros \n"
+        fmt = "{:20.8e}"
+        dString += fmt.format(self.L) + "\n"
+        dString += fmt.format(self.Dm) + "\n"
+        nparam = np.shape(self.fibras.param)[1]
+        dString += "{:3d}".format(nparam) + "\n"
+        dString += "".join( fmt.format(val) for val in self.fibras.param[0] ) + "\n"
+        fid.write(dString)
+        # escribo los nodos: indice, tipo, y coordenadas
+        dString = "*Coordenadas \n" + str(self.nodos.n) + "\n"
+        fid.write(dString)
+        for n in range( self.nodos.n ):
+            dString = "{:12d}".format(n)
+            dString += "{:2d}".format(self.nodos.t[n])
+            dString += "".join( "{:20.8e}".format(val) for val in self.nodos.r0[n] ) + "\n"
+            fid.write(dString)
+        # ---
+        # sigo con las fibras: indice, dl, d, dtheta, y segmentos (conectividad)
+        dString = "*Fibras \n" + str( self.fibras.n ) + "\n"
+        fid.write(dString)
+        for f, (n0,n1) in enumerate(self.fibras.con):
+            dString = "{:12d}".format(f) # indice
+            dString += "{:20.8e}{:20.8e}{:20.8e}".format(self.fibras.ds[f], self.fibras.letes0[f], self.fibras.lamsr[f]) # d, lete y lamr
+            dString += "{:12d}{:12d}".format(n0,n1) + "\n"
+            fid.write(dString)
+        # ---
+        fid.close()
+
 
 
     def calcular_fuerzas(self, longout=False):
@@ -256,45 +357,68 @@ class Mallita(object):
         # fin
         return matG, vecG
 
-    def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None):
+    def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None, plotnodos=False, maxnfibs=500):
         mi_cm = plt.cm.rainbow
-        lamsr = self.fibras.param[:,0]
+        lamsr = self.fibras.lamsr
         if lamr_min is None:
             lamr_min = np.min(lamsr)
         if lamr_max is None:
             lamr_max = np.max(lamsr)
         sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
-        for f, (n0,n1) in enumerate(self.fibras.con):
+        nfibs = self.fibras.n
+        if maxnfibs < nfibs:
+            nfibs = maxnfibs
+        for f in range(nfibs):
+            n0,n1 = self.fibras.con[f]
             # linea inicial
             x0,y0 = self.nodos.r0[n0]
             x1,y1 = self.nodos.r0[n1]
             c = sm.to_rgba(lamsr[f])
-            ax.plot([x0,x1], [y0,y1], ls="--", c=c)
+            ax.plot([x0,x1], [y0,y1], ls="-", c=c)
             # # linea final
             # x0,y0 = self.nodos.r[n0]
             # x1,y1 = self.nodos.r[n1]
             # ax.plot([x0,x1], [y0,y1], ls="-", c="k")
+        if plotnodos:
+            xnods = self.nodos.r0[:,0]
+            ynods = self.nodos.r0[:,1]
+            ax.plot(xnods, ynods, "x",c="gray")
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True):
+    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True, Fmacro=None, maxnfibs=500):
+        print "pregraficando mallita"
         mi_cm = plt.cm.rainbow
-        drs, longs, lams = self.fibras.calcular_drs_longs_lams(self.nodos.r)
+        drs, longs, lams = self.fibras.calcular_drs_letes_lams(self.nodos.r)
+        lamsr = self.fibras.lamsr
         if lam_min is None:
             lam_min = np.min(lams)
         if lam_max is None:
             lam_max = np.max(lams)
         sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
-        for f, (n0,n1) in enumerate(self.fibras.con):
-            # linea inicial
-            x0,y0 = self.nodos.r0[n0]
-            x1,y1 = self.nodos.r0[n1]
-            ax.plot([x0,x1], [y0,y1], ls="--", c="gray")
+        if Fmacro is None:
+            r0 = self.nodos.r0
+        else:
+            r0 = np.matmul(self.nodos.r0, np.transpose(Fmacro))
+        print "num fibras: ", self.fibras.n
+        nfibs = self.fibras.n
+        if maxnfibs < nfibs:
+            nfibs = maxnfibs
+        for f in range(nfibs):
+            n0,n1 = self.fibras.con[f]
+            print f,
+            if Fmacro is not None:
+                # linea inicial
+                x0,y0 = r0[n0]
+                x1,y1 = r0[n1]
+                c = "gray"
+                ax.plot([x0,x1], [y0,y1], ls="--", c=c)
             # linea final
             x0,y0 = self.nodos.r[n0]
             x1,y1 = self.nodos.r[n1]
-            c = sm.to_rgba(lams[f])
-            ax.plot([x0,x1], [y0,y1], ls="-", c="k")
+            c = sm.to_rgba(lams[f,0]/lamsr[f])
+            ax.plot([x0,x1], [y0,y1], ls="-", c=c)
+        print
         sm._A = []
         fig.colorbar(sm)
 
