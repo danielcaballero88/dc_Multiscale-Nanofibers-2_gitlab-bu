@@ -357,8 +357,24 @@ class Mallita(object):
         # fin
         return matG, vecG
 
+    def pre_graficar_bordes(self, fig, ax, byn=False):
+        # seteo
+        margen = 0.1*self.L
+        ax.set_xlim(left=0-margen, right=self.L+margen)
+        ax.set_ylim(bottom=0-margen, top=self.L+margen)
+        # dibujo los bordes del rve
+        fron = []
+        fron.append( [[0,self.L], [0,0]] )
+        fron.append( [[0,0], [self.L,0]] )
+        fron.append( [[0,self.L], [self.L,self.L]] )
+        fron.append( [[self.L,self.L], [self.L,0]] )
+        plt_fron0 = ax.plot(fron[0][0], fron[0][1], linestyle=":", c="gray")
+        plt_fron1 = ax.plot(fron[1][0], fron[1][1], linestyle=":", c="gray")
+        plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":", c="gray")
+        plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":", c="gray")
+
     def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None, plotnodos=False, maxnfibs=500):
-        mi_cm = plt.cm.rainbow
+        mi_cm = plt.cm.jet
         lamsr = self.fibras.lamsr
         if lamr_min is None:
             lamr_min = np.min(lamsr)
@@ -382,7 +398,7 @@ class Mallita(object):
         if plotnodos:
             xnods = self.nodos.r0[:,0]
             ynods = self.nodos.r0[:,1]
-            ax.plot(xnods, ynods, "x",c="gray")
+            ax.plot(xnods, ynods, linewidth=0, marker=".", mec="k", mfc="w", markersize=8)
         sm._A = []
         fig.colorbar(sm)
 
@@ -397,6 +413,8 @@ class Mallita(object):
             lam_max = np.max(lams)
         sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
         if Fmacro is None:
+            # si se da Fmacro r0 se modifica para que sean las coordenadas de deformacion afin
+            # de lo contrario quedan las iniciales
             r0 = self.nodos.r0
         else:
             r0 = np.matmul(self.nodos.r0, np.transpose(Fmacro))
@@ -408,7 +426,7 @@ class Mallita(object):
             n0,n1 = self.fibras.con[f]
             print f,
             if Fmacro is not None:
-                # linea inicial
+                # linea inicial (afin si se da Fmacro)
                 x0,y0 = r0[n0]
                 x1,y1 = r0[n1]
                 c = "gray"

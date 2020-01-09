@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 # =====
 # Calcular mallas y escribirlas
 Dm = 1.0
-nfibs = 0.3
-ncaps = 5
+nfibs = 10
+ncaps = 3
 
 dls_rel = [.05]
 devangs_deg = [20.]
@@ -42,7 +42,7 @@ print "tiempo generacion: ", time.time() - start
 # mc = Mc.leer_de_archivo("Malla_intersectada.txt")
 start = time.time()
 fig, ax = plt.subplots()
-mc.pre_graficar_fibras(fig, ax, byn=False, color_por="fibra")
+mc.pre_graficar_fibras(fig, ax, byn=True, color_por="capa")
 mc.pre_graficar_nodos_interseccion(fig,ax)
 print "tiempo pregraficar: ", time.time() - start
 # mc2 = Mc.leer_de_archivo("Malla_inter2.txt")

@@ -1,0 +1,1002 @@
+0.0
+Energia afin:  mean lambda:  0.992921700053
+0.0734470992151
+mean lambda:  0.9984475441
+Energia final:  0.00371400146883
+Energia afin:  mean lambda:  1.0070959377
+0.0738135066626
+mean lambda:  1.0016841455
+Energia final:  0.00434604337315
+Energia afin:  mean lambda:  1.00007158852
+7.51281811082e-06
+mean lambda:  1.00001633592
+Energia final:  4.09995754039e-07
+Energia afin:  mean lambda:  1.01428112344
+0.298979742101
+mean lambda:  1.00352152714
+Energia final:  0.0189565169123
+Energia afin:  mean lambda:  1.00723946945
+0.0768298062844
+mean lambda:  1.00171954324
+Energia final:  0.00453042615638
+Energia afin:  mean lambda:  1.02148364011
+0.676603379873
+mean lambda:  1.00549829139
+Energia final:  0.0461132003947
+Energia afin:  mean lambda:  1.01442500501
+0.305034516159
+mean lambda:  1.00355968826
+Energia final:  0.0193687158039
+Energia afin:  mean lambda:  1.02870316474
+1.20775826891
+mean lambda:  1.00761685668
+Energia final:  0.0883263379436
+Energia afin:  mean lambda:  1.02162786499
+0.685718332007
+mean lambda:  1.00553926516
+Energia final:  0.0468011537448
+Energia afin:  mean lambda:  1.03593938157
+1.89349547946
+mean lambda:  1.00987952371
+Energia final:  0.148341304098
+Energia afin:  mean lambda:  1.02884772653
+1.219954642
+mean lambda:  1.00766069039
+Energia final:  0.0893426308745
+Energia afin:  mean lambda:  1.04319198188
+2.73484382461
+mean lambda:  1.01228844039
+Energia final:  0.229143084457
+Energia afin:  mean lambda:  1.03608427403
+1.90879406617
+mean lambda:  1.00992626193
+Energia final:  0.149743276551
+Energia afin:  mean lambda:  1.05046066383
+3.73281036983
+mean lambda:  1.01484557119
+Energia final:  0.333958793788
+Energia afin:  mean lambda:  1.04333719892
+2.75326497769
+mean lambda:  1.0123381243
+Energia final:  0.230992900659
+Energia afin:  mean lambda:  1.05774513226
+4.88838093112
+mean lambda:  1.01755267044
+Energia final:  0.466258093132
+Energia afin:  mean lambda:  1.05060619947
+3.75437401222
+mean lambda:  1.01489823801
+Energia final:  0.336323472658
+Energia afin:  mean lambda:  1.06504509852
+6.20252056162
+mean lambda:  1.02041125939
+Energia final:  0.629751392953
+Energia afin:  mean lambda:  1.05789098065
+4.91310656574
+mean lambda:  1.01760835297
+Energia final:  0.46920949329
+Energia afin:  mean lambda:  1.07236028035
+7.67617402721
+mean lambda:  1.02342260691
+Energia final:  0.828385794081
+Energia afin:  mean lambda:  1.06519125397
+6.23042728105
+mean lambda:  1.02046998551
+Energia final:  0.6333661533
+Energia afin:  mean lambda:  1.07969040169
+9.31026627114
+mean lambda:  1.02658771417
+Energia final:  1.06633877226
+Energia afin:  mean lambda:  1.07250673728
+7.70728052304
+mean lambda:  1.02348439935
+Energia final:  0.832745233481
+Energia afin:  mean lambda:  1.08703519252
+11.105702868
+mean lambda:  1.02990730255
+Energia final:  1.3480096051
+Energia afin:  mean lambda:  1.07983715464
+9.34459084318
+mean lambda:  1.02665259009
+Energia final:  1.07152873177
+Energia afin:  mean lambda:  1.09439438874
+13.0633704672
+mean lambda:  1.03338180544
+Energia final:  1.67800866488
+Energia afin:  mean lambda:  1.08718223614
+11.1432634332
+mean lambda:  1.02997527349
+Energia final:  1.35412026478
+Energia afin:  mean lambda:  1.10176773198
+15.1841372262
+mean lambda:  1.03701136308
+Energia final:  2.06114464503
+Energia afin:  mean lambda:  1.09454171781
+13.1041845686
+mean lambda:  1.03345287708
+Energia final:  1.68513429978
+Energia afin:  mean lambda:  1.10915496952
+17.4688532338
+mean lambda:  1.04079582085
+Energia final:  2.50240991354
+Energia afin:  mean lambda:  1.1019153414
+15.2282220412
+mean lambda:  1.03708553521
+Energia final:  2.06938335503
+Energia afin:  mean lambda:  1.11655585408
+19.9183509235
+mean lambda:  1.04473473
+Energia final:  3.00696407403
+Energia afin:  mean lambda:  1.10930285428
+17.5162255828
+mean lambda:  1.04087308737
+Energia final:  2.51186330621
+Energia afin:  mean lambda:  1.12397014376
+22.533445477
+mean lambda:  1.04882735136
+Energia final:  3.58011602818
+Energia afin:  mean lambda:  1.1167040093
+19.9690272777
+mean lambda:  1.04481507894
+Energia final:  3.01773692539
+Energia afin:  mean lambda:  1.13139760184
+25.3149352189
+mean lambda:  1.05307266169
+Energia final:  4.22730474751
+Energia afin:  mean lambda:  1.12411856465
+22.5874419669
+mean lambda:  1.04891076512
+Energia final:  3.59231592536
+Energia afin:  mean lambda:  1.1388379967
+28.2636020017
+mean lambda:  1.05746936152
+Energia final:  4.95407884348
+Energia afin:  mean lambda:  1.13154628372
+25.3722676418
+mean lambda:  1.05315911693
+Energia final:  4.24104165307
+Energia afin:  mean lambda:  1.14629110168
+31.3802115819
+mean lambda:  1.06201588529
+Energia final:  5.76607533598
+Energia afin:  mean lambda:  1.13898693499
+28.3242858291
+mean lambda:  1.05755882935
+Energia final:  4.96946468004
+Energia afin:  mean lambda:  1.15375669496
+34.665513987
+mean lambda:  1.06671041386
+Energia final:  6.66899794875
+Energia afin:  mean lambda:  1.14644029189
+31.4442619673
+mean lambda:  1.06210833187
+Energia final:  5.78322361496
+Energia afin:  mean lambda:  1.16123455944
+38.1202438746
+mean lambda:  1.07155088643
+Energia final:  7.66859465401
+Energia afin:  mean lambda:  1.15390613271
+34.732945773
+mean lambda:  1.0668058002
+Energia final:  6.6880232491
+Energia afin:  mean lambda:  1.16872448263
+41.7451208824
+mean lambda:  1.07653501708
+Energia final:  8.77063578883
+Energia afin:  mean lambda:  1.16138424043
+38.1910716001
+mean lambda:  1.07164916932
+Energia final:  7.68961231063
+Energia afin:  mean lambda:  1.17622625652
+45.5408499699
+mean lambda:  1.08166030829
+Energia final:  9.98089149502
+Energia afin:  mean lambda:  1.16887440265
+41.8193587892
+mean lambda:  1.07663614812
+Energia final:  8.79376117872
+Energia afin:  mean lambda:  1.18373967753
+49.5081217529
+mean lambda:  1.08692406799
+Energia final:  11.3051100673
+Energia afin:  mean lambda:  1.17637641147
+45.6185120099
+mean lambda:  1.08176423561
+Energia final:  10.0062398952
+Energia afin:  mean lambda:  1.19126454631
+53.6476128286
+mean lambda:  1.09232342775
+Energia final:  12.7489971121
+Energia afin:  mean lambda:  1.18389006337
+49.5892215942
+mean lambda:  1.08703073621
+Energia final:  11.3327961571
+Energia afin:  mean lambda:  1.19880066773
+57.9599860947
+mean lambda:  1.09785535787
+Energia final:  14.3181946001
+Energia afin:  mean lambda:  1.19141515911
+53.7321638624
+mean lambda:  1.09243277749
+Energia final:  12.7791343435
+Energia afin:  mean lambda:  1.20634785072
+62.4458910595
+mean lambda:  1.10351668691
+Energia final:  16.0182619881
+Energia afin:  mean lambda:  1.19895150362
+58.0480014414
+mean lambda:  1.09796732728
+Energia final:  14.3508950992
+Energia afin:  mean lambda:  1.21390590819
+67.1059641456
+mean lambda:  1.10930411773
+Energia final:  17.8546575382
+Energia afin:  mean lambda:  1.20649890592
+62.5373835748
+mean lambda:  1.10363121102
+Energia final:  16.0536359179
+Energia afin:  mean lambda:  1.22147465696
+71.9408289858
+mean lambda:  1.11521424634
+Energia final:  19.8327217556
+Energia afin:  mean lambda:  1.214057179
+67.2009464265
+mean lambda:  1.10942112916
+Energia final:  17.8928128212
+Energia afin:  mean lambda:  1.22905391761
+76.9510967124
+mean lambda:  1.12124357779
+Energia final:  21.9576613959
+Energia afin:  mean lambda:  1.22162613975
+72.0393133765
+mean lambda:  1.11533367666
+Energia final:  19.8737640949
+Energia afin:  mean lambda:  1.23664351444
+82.1373662392
+mean lambda:  1.12738854414
+Energia final:  24.2345357474
+Energia afin:  mean lambda:  1.22920560883
+77.05309531
+mean lambda:  1.12136535593
+Energia final:  22.0016933402
+Energia afin:  mean lambda:  1.24424327537
+87.500224537
+mean lambda:  1.13364552024
+Energia final:  26.6682439149
+Energia afin:  mean lambda:  1.23679541062
+82.2428908992
+mean lambda:  1.12751259804
+Energia final:  24.2816568654
+Energia afin:  mean lambda:  1.25185303186
+93.0402469029
+mean lambda:  1.14001083922
+Energia final:  29.2635137591
+Energia afin:  mean lambda:  1.2443953731
+87.609286879
+mean lambda:  1.13377177701
+Energia final:  26.718550503
+Energia afin:  mean lambda:  1.25947261879
+98.7579972222
+mean lambda:  1.14648080842
+Energia final:  32.0248929306
+Energia afin:  mean lambda:  1.25200532781
+93.1528583154
+mean lambda:  1.14013922555
+Energia final:  29.3170987102
+Energia afin:  mean lambda:  1.26710187443
+104.654028225
+mean lambda:  1.15305172233
+Energia final:  34.9567405571
+Energia afin:  mean lambda:  1.25962510968
+98.8741688683
+mean lambda:  1.14661124977
+Energia final:  32.0818450839
+Energia afin:  mean lambda:  1.27474064032
+110.728881737
+mean lambda:  1.1597198768
+Energia final:  38.0632213678
+Energia afin:  mean lambda:  1.26725455707
+104.773771047
+mean lambda:  1.15318414503
+Energia final:  35.0171453351
+Energia afin:  mean lambda:  1.28238876122
+116.983088921
+mean lambda:  1.16648158161
+Energia final:  41.3483010544
+Energia afin:  mean lambda:  1.27489351157
+110.852206462
+mean lambda:  1.15985420629
+Energia final:  38.1271597805
+Energia afin:  mean lambda:  1.29004608503
+123.41717052
+mean lambda:  1.17333317197
+Energia final:  44.8157430375
+Energia afin:  mean lambda:  1.28254181801
+117.110006066
+mean lambda:  1.16661774477
+Energia final:  41.4158505857
+Energia afin:  mean lambda:  1.29771246269
+130.031637085
+mean lambda:  1.18027101958
+Energia final:  48.4691068207
+Energia afin:  mean lambda:  1.29019932434
+123.547690394
+mean lambda:  1.1734710959
+Energia final:  44.886976909
+Energia afin:  mean lambda:  1.30538774816
+136.826989204
+mean lambda:  1.18729154078
+Energia final:  52.3117466568
+Energia afin:  mean lambda:  1.29786588158
+130.165769797
+mean lambda:  1.18041063134
+Energia final:  48.5440937098
+Energia afin:  mean lambda:  1.3130717983
+143.803717725
+mean lambda:  1.19439120927
+Energia final:  56.3468143758
+Energia afin:  mean lambda:  1.30554134374
+136.964744666
+mean lambda:  1.1874327705
+Energia final:  52.3905522502
+Energia afin:  mean lambda:  1.32076447283
+150.962303971
+mean lambda:  1.20156655886
+Energia final:  60.5772584061
+Energia afin:  mean lambda:  1.31322556773
+143.945105657
+mean lambda:  1.194533986
+Energia final:  56.4294990691
+Energia afin:  mean lambda:  1.32846563426
+158.30321995
+mean lambda:  1.20881419493
+Energia final:  65.0058291514
+Energia afin:  mean lambda:  1.32091841334
+151.107333902
+mean lambda:  1.2017108144
+Energia final:  60.6638793686
+Energia afin:  mean lambda:  1.33617514782
+165.826928563
+mean lambda:  1.21613079856
+Energia final:  69.6350816659
+Energia afin:  mean lambda:  1.32861974313
+158.451901227
+mean lambda:  1.20895986239
+Energia final:  65.0964395458
+Energia afin:  mean lambda:  1.3438928814
+173.533883806
+mean lambda:  1.22351313187
+Energia final:  74.4673802624
+Energia afin:  mean lambda:  1.33632942237
+165.979270353
+mean lambda:  1.21627781195
+Energia final:  69.7297303717
+Energia afin:  mean lambda:  1.3516187055
+181.424530963
+mean lambda:  1.23095804336
+Energia final:  79.5049043969
+Energia afin:  mean lambda:  1.34404731902
+173.689895099
+mean lambda:  1.22366142775
+Energia final:  74.5661129549
+Energia afin:  mean lambda:  1.35935249314
+189.499306801
+mean lambda:  1.23846247195
+Energia final:  84.749654907
+Energia afin:  mean lambda:  1.35177330362
+181.584220577
+mean lambda:  1.23110755877
+Energia final:  79.6077622589
+Energia afin:  mean lambda:  1.36709411984
+197.758639756
+mean lambda:  1.24602344666
+Energia final:  90.2034580286
+Energia afin:  mean lambda:  1.35950724926
+189.662683387
+mean lambda:  1.23861314658
+Energia final:  84.8566761239
+Energia afin:  mean lambda:  1.37484346353
+206.202950116
+mean lambda:  1.2536380965
+Energia final:  95.8679777867
+Energia afin:  mean lambda:  1.36724903149
+197.925711798
+mean lambda:  1.24617522327
+Energia final:  90.314678292
+Energia afin:  mean lambda:  1.38260040455
+214.832650197
+mean lambda:  1.26130364318
+Energia final:  101.744716676
+Energia afin:  mean lambda:  1.3749985283
+206.373725937
+mean lambda:  1.25379091765
+Energia final:  95.9834280097
+Energia afin:  mean lambda:  1.3903648255
+223.648144522
+mean lambda:  1.26901740894
+Energia final:  107.835028039
+Energia afin:  mean lambda:  1.38275562005
+215.007137965
+mean lambda:  1.26145745458
+Energia final:  101.864425538
+Energia afin:  mean lambda:  1.39813661128
+232.649829986
+mean lambda:  1.27677681463
+Energia final:  114.140121899
+Energia afin:  mean lambda:  1.39052018942
+223.826352248
+mean lambda:  1.26917215866
+Energia final:  107.959021614
+Energia afin:  mean lambda:  1.405915649
+241.838096025
+mean lambda:  1.28457937952
+Energia final:  120.661072431
+Energia afin:  mean lambda:  1.39829212134
+232.831765532
+mean lambda:  1.27693245116
+Energia final:  114.268422237
+Energia afin:  mean lambda:  1.41370182794
+251.213324776
+mean lambda:  1.29242272225
+Energia final:  127.398826809
+Energia afin:  mean lambda:  1.40607130296
+242.023767104
+mean lambda:  1.2847358548
+Energia final:  120.793700135
+Energia afin:  mean lambda:  1.42149503947
+260.775891238
+mean lambda:  1.30030455935
+Energia final:  134.354212329
+Energia afin:  mean lambda:  1.41385762361
+251.402738958
+mean lambda:  1.29257998885
+Energia final:  127.535798864
+Energia afin:  mean lambda:  1.42929517705
+270.526163422
+mean lambda:  1.30822270439
+Energia final:  141.52794437
+Energia afin:  mean lambda:  1.42165097469
+260.969055951
+mean lambda:  1.30046257331
+Energia final:  134.495544751
+Energia afin:  mean lambda:  1.43710213617
+280.464502505
+mean lambda:  1.31617506645
+Energia final:  148.920633792
+Energia afin:  mean lambda:  1.42945124973
+270.723085956
+mean lambda:  1.30838142269
+Energia final:  141.673650118
+Energia afin:  mean lambda:  1.44491581427
+290.591262978
+mean lambda:  1.3241596496
+Energia final:  156.53279545
+Energia afin:  mean lambda:  1.43725834422
+280.665190015
+mean lambda:  1.31633444896
+Energia final:  149.070724746
+Energia afin:  mean lambda:  1.45273611074
+300.906792786
+mean lambda:  1.33217454942
+Energia final:  164.364854033
+Energia afin:  mean lambda:  1.44507215567
+290.795722486
+mean lambda:  1.32431965708
+Energia final:  156.687280747
+Energia afin:  mean lambda:  1.46056292687
+311.41143347
+mean lambda:  1.34021795078
+Energia final:  172.41715081
+Energia afin:  mean lambda:  1.45289258349
+301.115031185
+mean lambda:  1.33233514347
+Energia final:  164.523740062
+Energia afin:  mean lambda:  1.46839616577
+322.105520306
+mean lambda:  1.34828812841
+Energia final:  180.689953335
+Energia afin:  mean lambda:  1.46071952902
+311.623457528
+mean lambda:  1.34037909783
+Energia final:  172.580445435
+Energia afin:  mean lambda:  1.4762357324
+332.989382436
+mean lambda:  1.35638344073
+Energia final:  189.183458157
+Energia afin:  mean lambda:  1.46855289541
+322.321336664
+mean lambda:  1.34844979359
+Energia final:  180.857659922
+Energia afin:  mean lambda:  1.48408153344
+344.063342999
+mean lambda:  1.36450232979
+Energia final:  197.897799586
+Energia afin:  mean lambda:  1.47639258763
+333.208997616
+mean lambda:  1.35654559244
+Energia final:  189.355580365
+Energia afin:  mean lambda:  1.49193347735
+355.327719259
+mean lambda:  1.3726433169
+Energia final:  206.833053736
+Energia afin:  mean lambda:  1.48423851242
+344.286763403
+mean lambda:  1.3646649371
+Energia final:  198.074338837
+Energia afin:  mean lambda:  1.49979147424
+366.78282273
+mean lambda:  1.38080500294
+Energia final:  215.989247479
+Energia afin:  mean lambda:  1.49209057827
+355.554951173
+mean lambda:  1.372806352
+Energia final:  207.014012053
+Energia afin:  mean lambda:  1.5076554359
+378.428959298
+mean lambda:  1.38898606304
+Energia final:  225.366361057
+Energia afin:  mean lambda:  1.49994869531
+367.013872327
+mean lambda:  1.38096843903
+Energia final:  216.174625404
+Energia afin:  mean lambda:  1.51552527574
+390.266429337
+mean lambda:  1.39718524205
+Energia final:  234.964330874
+Energia afin:  mean lambda:  1.50781277538
+378.663832639
+mean lambda:  1.38914987295
+Energia final:  225.556156139
+Energia afin:  mean lambda:  1.52340090873
+402.295527828
+mean lambda:  1.40540135771
+Energia final:  244.783061283
+Energia afin:  mean lambda:  1.51568273191
+390.505132374
+mean lambda:  1.39734940264
+Energia final:  235.158542924
+Energia afin:  mean lambda:  1.53128225143
+414.516544471
+mean lambda:  1.41363329157
+Energia final:  254.822421533
+Energia afin:  mean lambda:  1.52355847991
+402.538066407
+mean lambda:  1.40556584558
+Energia final:  244.981687521
+Energia afin:  mean lambda:  1.53916922188
+426.929763795
+mean lambda:  1.42187998956
+Energia final:  265.082253864
+Energia afin:  mean lambda:  1.53143993596
+414.762924332
+mean lambda:  1.41379808433
+Energia final:  255.025458211
+Energia afin:  mean lambda:  1.54706173962
+439.535465266
+mean lambda:  1.4301404594
+Energia final:  275.56237762
+Energia afin:  mean lambda:  1.53932701814
+427.179990576
+mean lambda:  1.42204506751
+Energia final:  265.289698512
+Energia afin:  mean lambda:  1.55495972565
+452.333923396
+mean lambda:  1.43841376628
+Energia final:  286.262590739
+Energia afin:  mean lambda:  1.54721964601
+439.789544507
+mean lambda:  1.43030580295
+Energia final:  275.774225958
+Energia afin:  mean lambda:  1.56286310238
+465.325407841
+mean lambda:  1.44669903045
+Energia final:  297.182673335
+Energia afin:  mean lambda:  1.55511774061
+452.591860537
+mean lambda:  1.43857935709
+Energia final:  286.478838257
+Energia afin:  mean lambda:  1.57077179362
+478.510183504
+mean lambda:  1.45499542576
+Energia final:  308.322392147
+Energia afin:  mean lambda:  1.56302122438
+465.587208225
+mean lambda:  1.4468648518
+Energia final:  297.403315891
+Energia afin:  mean lambda:  1.57868572454
+491.888510633
+mean lambda:  1.46330217786
+Energia final:  319.681504484
+Energia afin:  mean lambda:  1.57093002114
+478.775852382
+mean lambda:  1.45516146218
+Energia final:  308.547425671
+Energia afin:  mean lambda:  1.58660482163
+505.460644919
+mean lambda:  1.4716185572
+Energia final:  331.259754492
+Energia afin:  mean lambda:  1.57884405609
+492.158053164
+mean lambda:  1.46346841322
+Energia final:  319.910922476
+Energia afin:  mean lambda:  1.59452901271
+519.226837588
+mean lambda:  1.47994388229
+Energia final:  343.056883211
+Energia afin:  mean lambda:  1.58676325577
+505.734066171
+mean lambda:  1.47178497798
+Energia final:  331.49355257
+Energia afin:  mean lambda:  1.60245822685
+533.187335491
+mean lambda:  1.48827751317
+Energia final:  355.072624886
+Energia afin:  mean lambda:  1.594687548
+519.504142539
+mean lambda:  1.48011047561
+Energia final:  343.295056595
+Energia afin:  mean lambda:  1.6103923944
+547.342381197
+mean lambda:  1.49661885248
+Energia final:  367.306713522
+Energia afin:  mean lambda:  1.60261686189
+533.468529035
+mean lambda:  1.48844426653
+Energia final:  355.315168028
+Energia afin:  mean lambda:  1.61833144692
+561.692213078
+mean lambda:  1.50496733997
+Energia final:  379.758879837
+Energia afin:  mean lambda:  1.61055112781
+547.627468143
+mean lambda:  1.49678575416
+Energia final:  367.553620851
+Energia afin:  mean lambda:  1.62627531715
+576.237065398
+mean lambda:  1.51332245253
+Energia final:  392.428855803
+Energia afin:  mean lambda:  1.61849027733
+561.981198151
+mean lambda:  1.50513437893
+Energia final:  380.010145641
+Energia afin:  mean lambda:  1.63422393905
+590.97716839
+mean lambda:  1.52168370171
+Energia final:  405.316375316
+Energia afin:  mean lambda:  1.62643424324
+576.52995324
+mean lambda:  1.51348961888
+Energia final:  392.684475039
+Energia afin:  mean lambda:  1.64217724768
+605.912748345
+mean lambda:  1.53005063135
+Energia final:  418.421174729
+Energia afin:  mean lambda:  1.6343829595
+591.273963567
+mean lambda:  1.52185098618
+Energia final:  405.576342951
+Energia afin:  mean lambda:  1.65013517927
+621.044027688
+mean lambda:  1.53842281665
+Energia final:  431.742995347
+Energia afin:  mean lambda:  1.64233636122
+606.213455343
+mean lambda:  1.53021802512
+Energia final:  418.685485516
+Energia afin:  mean lambda:  1.65809767112
+636.371225056
+mean lambda:  1.54679986091
+Energia final:  445.281581895
+Energia afin:  mean lambda:  1.65029438462
+621.348650917
+mean lambda:  1.53859031101
+Energia final:  432.011643319
+Energia afin:  mean lambda:  1.66606466162
+651.894555373
+mean lambda:  1.55518139504
+Energia final:  459.036685276
+Energia afin:  mean lambda:  1.65825696704
+636.679768849
+mean lambda:  1.54696744871
+Energia final:  445.554562808
+Energia afin:  mean lambda:  1.67403609023
+667.61422993
+mean lambda:  1.56356707589
+Energia final:  473.00806313
+Energia afin:  mean lambda:  1.6662240469
+652.207023993
+mean lambda:  1.5553490692
+Energia final:  459.313994278
+Energia afin:  mean lambda:  1.68201189744
+683.530456451
+mean lambda:  1.57195658346
+Energia final:  487.195478302
+Energia afin:  mean lambda:  1.67419556366
+667.930627565
+mean lambda:  1.56373482948
+Energia final:  473.289694906
+Energia afin:  mean lambda:  1.68999202474
+699.643439168
+mean lambda:  1.58034962157
+Energia final:  501.598702875
+Energia afin:  mean lambda:  1.68217145784
+683.85078722
+mean lambda:  1.57212441068
+Energia final:  487.481428787
+Energia afin:  mean lambda:  1.69797641464
+715.953378889
+mean lambda:  1.58874591381
+Energia final:  516.217514023
+Energia afin:  mean lambda:  1.69015167096
+699.96770712
+mean lambda:  1.58051751632
+Energia final:  501.888966914
+Energia afin:  mean lambda:  1.70596501061
+732.460473068
+mean lambda:  1.59714520435
+Energia final:  531.051697966
+Energia afin:  mean lambda:  1.69813614553
+716.281588007
+mean lambda:  1.58891387072
+Energia final:  516.512087153
+Energia afin:  mean lambda:  1.71395775708
+749.16491587
+mean lambda:  1.60554725601
+Energia final:  546.101048972
+Energia afin:  mean lambda:  1.70612482505
+732.792627266
+mean lambda:  1.59731321903
+Energia final:  531.350576923
+Energia afin:  mean lambda:  1.7219545994
+766.066898234
+mean lambda:  1.61395184892
+Energia final:  561.36536928
+Energia afin:  mean lambda:  1.71411765397
+749.501018999
+mean lambda:  1.60571532361
+Energia final:  546.404229215
+Energia afin:  mean lambda:  1.72995548387
+783.166607941
+mean lambda:  1.62235877903
+Energia final:  576.844468526
+Energia afin:  mean lambda:  1.72211457766
+766.40695408
+mean lambda:  1.61411996533
+Energia final:  561.672847165
+Energia afin:  mean lambda:  1.73796035765
+800.464229673
+mean lambda:  1.63076785809
+Energia final:  592.538165632
+Energia afin:  mean lambda:  1.73011554242
+783.510620228
+mean lambda:  1.62252694021
+Energia final:  577.156240111
+Energia afin:  mean lambda:  1.74596916881
+817.959945073
+mean lambda:  1.63917891125
+Energia final:  608.446286235
+Energia afin:  mean lambda:  1.73812049546
+800.812202063
+mean lambda:  1.63093606042
+Energia final:  592.854227359
+Energia afin:  mean lambda:  1.75398186627
+835.653932807
+mean lambda:  1.64759177719
+Energia final:  624.568664626
+Energia afin:  mean lambda:  1.74612938484
+818.311881168
+mean lambda:  1.63934715132
+Energia final:  608.76663462
+Energia afin:  mean lambda:  1.7619983998
+853.546368621
+mean lambda:  1.65600630675
+Energia final:  640.905142764
+Energia afin:  mean lambda:  1.75414215952
+836.009836152
+mean lambda:  1.64776005186
+Energia final:  624.893296355
+Energia afin:  mean lambda:  1.77001872
+871.637425398
+mean lambda:  1.66442236256
+Energia final:  657.455571071
+resultados: extension, energia 
+      9.90000000e-01       3.71400147e-03
+      1.01000000e+00       4.34604337e-03
+      1.00010101e+00       4.09995754e-07
+      1.02010101e+00       1.89565169e-02
+      1.01020202e+00       4.53042616e-03
+      1.03020202e+00       4.61132004e-02
+      1.02030303e+00       1.93687158e-02
+      1.04030303e+00       8.83263379e-02
+      1.03040404e+00       4.68011537e-02
+      1.05040404e+00       1.48341304e-01
+      1.04050505e+00       8.93426309e-02
+      1.06050505e+00       2.29143084e-01
+      1.05060606e+00       1.49743277e-01
+      1.07060606e+00       3.33958794e-01
+      1.06070707e+00       2.30992901e-01
+      1.08070707e+00       4.66258093e-01
+      1.07080808e+00       3.36323473e-01
+      1.09080808e+00       6.29751393e-01
+      1.08090909e+00       4.69209493e-01
+      1.10090909e+00       8.28385794e-01
+      1.09101010e+00       6.33366153e-01
+      1.11101010e+00       1.06633877e+00
+      1.10111111e+00       8.32745233e-01
+      1.12111111e+00       1.34800961e+00
+      1.11121212e+00       1.07152873e+00
+      1.13121212e+00       1.67800866e+00
+      1.12131313e+00       1.35412026e+00
+      1.14131313e+00       2.06114465e+00
+      1.13141414e+00       1.68513430e+00
+      1.15141414e+00       2.50240991e+00
+      1.14151515e+00       2.06938336e+00
+      1.16151515e+00       3.00696407e+00
+      1.15161616e+00       2.51186331e+00
+      1.17161616e+00       3.58011603e+00
+      1.16171717e+00       3.01773693e+00
+      1.18171717e+00       4.22730475e+00
+      1.17181818e+00       3.59231593e+00
+      1.19181818e+00       4.95407884e+00
+      1.18191919e+00       4.24104165e+00
+      1.20191919e+00       5.76607534e+00
+      1.19202020e+00       4.96946468e+00
+      1.21202020e+00       6.66899795e+00
+      1.20212121e+00       5.78322361e+00
+      1.22212121e+00       7.66859465e+00
+      1.21222222e+00       6.68802325e+00
+      1.23222222e+00       8.77063579e+00
+      1.22232323e+00       7.68961231e+00
+      1.24232323e+00       9.98089150e+00
+      1.23242424e+00       8.79376118e+00
+      1.25242424e+00       1.13051101e+01
+      1.24252525e+00       1.00062399e+01
+      1.26252525e+00       1.27489971e+01
+      1.25262626e+00       1.13327962e+01
+      1.27262626e+00       1.43181946e+01
+      1.26272727e+00       1.27791343e+01
+      1.28272727e+00       1.60182620e+01
+      1.27282828e+00       1.43508951e+01
+      1.29282828e+00       1.78546575e+01
+      1.28292929e+00       1.60536359e+01
+      1.30292929e+00       1.98327218e+01
+      1.29303030e+00       1.78928128e+01
+      1.31303030e+00       2.19576614e+01
+      1.30313131e+00       1.98737641e+01
+      1.32313131e+00       2.42345357e+01
+      1.31323232e+00       2.20016933e+01
+      1.33323232e+00       2.66682439e+01
+      1.32333333e+00       2.42816569e+01
+      1.34333333e+00       2.92635138e+01
+      1.33343434e+00       2.67185505e+01
+      1.35343434e+00       3.20248929e+01
+      1.34353535e+00       2.93170987e+01
+      1.36353535e+00       3.49567406e+01
+      1.35363636e+00       3.20818451e+01
+      1.37363636e+00       3.80632214e+01
+      1.36373737e+00       3.50171453e+01
+      1.38373737e+00       4.13483011e+01
+      1.37383838e+00       3.81271598e+01
+      1.39383838e+00       4.48157430e+01
+      1.38393939e+00       4.14158506e+01
+      1.40393939e+00       4.84691068e+01
+      1.39404040e+00       4.48869769e+01
+      1.41404040e+00       5.23117467e+01
+      1.40414141e+00       4.85440937e+01
+      1.42414141e+00       5.63468144e+01
+      1.41424242e+00       5.23905523e+01
+      1.43424242e+00       6.05772584e+01
+      1.42434343e+00       5.64294991e+01
+      1.44434343e+00       6.50058292e+01
+      1.43444444e+00       6.06638794e+01
+      1.45444444e+00       6.96350817e+01
+      1.44454545e+00       6.50964395e+01
+      1.46454545e+00       7.44673803e+01
+      1.45464646e+00       6.97297304e+01
+      1.47464646e+00       7.95049044e+01
+      1.46474747e+00       7.45661130e+01
+      1.48474747e+00       8.47496549e+01
+      1.47484848e+00       7.96077623e+01
+      1.49484848e+00       9.02034580e+01
+      1.48494949e+00       8.48566761e+01
+      1.50494949e+00       9.58679778e+01
+      1.49505051e+00       9.03146783e+01
+      1.51505051e+00       1.01744717e+02
+      1.50515152e+00       9.59834280e+01
+      1.52515152e+00       1.07835028e+02
+      1.51525253e+00       1.01864426e+02
+      1.53525253e+00       1.14140122e+02
+      1.52535354e+00       1.07959022e+02
+      1.54535354e+00       1.20661072e+02
+      1.53545455e+00       1.14268422e+02
+      1.55545455e+00       1.27398827e+02
+      1.54555556e+00       1.20793700e+02
+      1.56555556e+00       1.34354212e+02
+      1.55565657e+00       1.27535799e+02
+      1.57565657e+00       1.41527944e+02
+      1.56575758e+00       1.34495545e+02
+      1.58575758e+00       1.48920634e+02
+      1.57585859e+00       1.41673650e+02
+      1.59585859e+00       1.56532795e+02
+      1.58595960e+00       1.49070725e+02
+      1.60595960e+00       1.64364854e+02
+      1.59606061e+00       1.56687281e+02
+      1.61606061e+00       1.72417151e+02
+      1.60616162e+00       1.64523740e+02
+      1.62616162e+00       1.80689953e+02
+      1.61626263e+00       1.72580445e+02
+      1.63626263e+00       1.89183458e+02
+      1.62636364e+00       1.80857660e+02
+      1.64636364e+00       1.97897800e+02
+      1.63646465e+00       1.89355580e+02
+      1.65646465e+00       2.06833054e+02
+      1.64656566e+00       1.98074339e+02
+      1.66656566e+00       2.15989247e+02
+      1.65666667e+00       2.07014012e+02
+      1.67666667e+00       2.25366361e+02
+      1.66676768e+00       2.16174625e+02
+      1.68676768e+00       2.34964331e+02
+      1.67686869e+00       2.25556156e+02
+      1.69686869e+00       2.44783061e+02
+      1.68696970e+00       2.35158543e+02
+      1.70696970e+00       2.54822422e+02
+      1.69707071e+00       2.44981688e+02
+      1.71707071e+00       2.65082254e+02
+      1.70717172e+00       2.55025458e+02
+      1.72717172e+00       2.75562378e+02
+      1.71727273e+00       2.65289699e+02
+      1.73727273e+00       2.86262591e+02
+      1.72737374e+00       2.75774226e+02
+      1.74737374e+00       2.97182673e+02
+      1.73747475e+00       2.86478838e+02
+      1.75747475e+00       3.08322392e+02
+      1.74757576e+00       2.97403316e+02
+      1.76757576e+00       3.19681504e+02
+      1.75767677e+00       3.08547426e+02
+      1.77767677e+00       3.31259754e+02
+      1.76777778e+00       3.19910922e+02
+      1.78777778e+00       3.43056883e+02
+      1.77787879e+00       3.31493553e+02
+      1.79787879e+00       3.55072625e+02
+      1.78797980e+00       3.43295057e+02
+      1.80797980e+00       3.67306714e+02
+      1.79808081e+00       3.55315168e+02
+      1.81808081e+00       3.79758880e+02
+      1.80818182e+00       3.67553621e+02
+      1.82818182e+00       3.92428856e+02
+      1.81828283e+00       3.80010146e+02
+      1.83828283e+00       4.05316375e+02
+      1.82838384e+00       3.92684475e+02
+      1.84838384e+00       4.18421175e+02
+      1.83848485e+00       4.05576343e+02
+      1.85848485e+00       4.31742995e+02
+      1.84858586e+00       4.18685486e+02
+      1.86858586e+00       4.45281582e+02
+      1.85868687e+00       4.32011643e+02
+      1.87868687e+00       4.59036685e+02
+      1.86878788e+00       4.45554563e+02
+      1.88878788e+00       4.73008063e+02
+      1.87888889e+00       4.59313994e+02
+      1.89888889e+00       4.87195478e+02
+      1.88898990e+00       4.73289695e+02
+      1.90898990e+00       5.01598703e+02
+      1.89909091e+00       4.87481429e+02
+      1.91909091e+00       5.16217514e+02
+      1.90919192e+00       5.01888967e+02
+      1.92919192e+00       5.31051698e+02
+      1.91929293e+00       5.16512087e+02
+      1.93929293e+00       5.46101049e+02
+      1.92939394e+00       5.31350577e+02
+      1.94939394e+00       5.61365369e+02
+      1.93949495e+00       5.46404229e+02
+      1.95949495e+00       5.76844469e+02
+      1.94959596e+00       5.61672847e+02
+      1.96959596e+00       5.92538166e+02
+      1.95969697e+00       5.77156240e+02
+      1.97969697e+00       6.08446286e+02
+      1.96979798e+00       5.92854227e+02
+      1.98979798e+00       6.24568665e+02
+      1.97989899e+00       6.08766635e+02
+      1.99989899e+00       6.40905143e+02
+      1.99000000e+00       6.24893296e+02
+      2.01000000e+00       6.57455571e+02

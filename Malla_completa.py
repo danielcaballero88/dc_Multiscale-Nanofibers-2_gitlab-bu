@@ -12,6 +12,7 @@ Los nodos tienen coordenadas y tipo (0=continuacion, 1=frontera, 2=interseccion)
 
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.colors as colors
 # import collections
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
@@ -974,17 +975,16 @@ class Malla(object):
         margen = 0.1*self.L
         ax.set_xlim(left=0-margen, right=self.L+margen)
         ax.set_ylim(bottom=0-margen, top=self.L+margen)
-        self.pregraficado = True
         # dibujo los bordes del rve
         fron = []
         fron.append( [[0,self.L], [0,0]] )
         fron.append( [[0,0], [self.L,0]] )
         fron.append( [[0,self.L], [self.L,self.L]] )
         fron.append( [[self.L,self.L], [self.L,0]] )
-        plt_fron0 = ax.plot(fron[0][0], fron[0][1], linestyle=":")
-        plt_fron1 = ax.plot(fron[1][0], fron[1][1], linestyle=":")
-        plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":")
-        plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":")
+        plt_fron0 = ax.plot(fron[0][0], fron[0][1], linestyle=":", c="gray")
+        plt_fron1 = ax.plot(fron[1][0], fron[1][1], linestyle=":", c="gray")
+        plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":", c="gray")
+        plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":", c="gray")
 
 
     def pre_graficar_capas(self, fig, ax, byn=True):
@@ -1019,10 +1019,22 @@ class Malla(object):
         sm._A = []
         fig.colorbar(sm)
 
-    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="lamr"):
+    @staticmethod
+    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = colors.LinearSegmentedColormap.from_list(
+            'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+            cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
+
+    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada"):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
-        mi_colormap = plt.cm.rainbow
+        if byn:
+            mi_colormap = plt.cm.gray_r
+            # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
+            mi_colormap = self.truncate_colormap(mi_colormap, 0.4, 1.0)
+        else:
+            mi_colormap = plt.cm.jet
         if color_por == "lamr":
             if lamr_min is None:
                 lamr_min = np.min(lamsr)
@@ -1031,6 +1043,8 @@ class Malla(object):
             sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
         elif color_por == "fibra":
             sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=len(self.fibs.con)-1))
+        elif color_por == "capa":
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=len(self.caps.con)-1))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
@@ -1056,24 +1070,38 @@ class Malla(object):
                     col = sm.to_rgba(lamsr[f])
                 elif color_por =="fibra":
                     col = sm.to_rgba(f)
-                if byn:
+                elif color_por == "capa":
+                    col = sm.to_rgba(c)
+                elif color_por == "nada":
                     col = "k"
                 grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
-        if barracolor and not byn:
+        if barracolor and color_por not in ("nada", "fibra"):
             sm._A = []
-            fig.colorbar(sm)
+            cbar = fig.colorbar(sm)
+            if color_por == "capa":
+                cbar.set_ticks(range(len(self.caps.con)))
 
 
-    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False):
+    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada"):
         # preparo un mapa de colores mapeable por escalar
         infbs_con = self.calcular_conectividad_de_interfibras()
         lamsr = self.calcular_enrulamientos_de_interfibras()
-        mi_colormap = plt.cm.rainbow
-        if lamr_min is None:
-            lamr_min = np.min(lamsr)
-        if lamr_max is None:
-            lamr_max = np.max(lamsr)
-        sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        if byn:
+            mi_colormap = plt.cm.gray_r
+            # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
+            mi_colormap = self.truncate_colormap(mi_colormap, 0.4, 1.0)
+        else:
+            mi_colormap = plt.cm.jet
+        if color_por == "lamr":
+            if lamr_min is None:
+                lamr_min = np.min(lamsr)
+            if lamr_max is None:
+                lamr_max = np.max(lamsr)
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=lamr_min, vmax=lamr_max))
+        elif color_por == "interfibra":
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=len(infbs_con)-1))
+        elif color_por == "nada":
+            sm = plt.cm.ScalarMappable(cmap=mi_colormap, norm=plt.Normalize(vmin=0, vmax=len(infbs_con)-1))
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for infb_con in  infbs_con ]
@@ -1093,11 +1121,14 @@ class Malla(object):
                 r = self.nods.r[n] # coordenadas de ese nodo
                 xx[i].append(r[0])
                 yy[i].append(r[1])
-            col = sm.to_rgba(lamsr[i])
-            if byn:
+            if color_por == "lamr":
+                col = sm.to_rgba(lamsr[i])
+            elif color_por =="interfibra":
+                col = sm.to_rgba(i)
+            elif color_por == "nada":
                 col = "k"
             grafs.append( ax.plot(xx[i], yy[i], linestyle="-", marker="", label=str(i), color=col) )
-        if not byn:
+        if not byn and barracolor:
             sm._A = []
             fig.colorbar(sm)
 
@@ -1131,7 +1162,7 @@ class Malla(object):
             if self.nods.tipos[n] == 2:
                 xx.append(self.nods.r[n][0])
                 yy.append(self.nods.r[n][1])
-        ax.plot(xx, yy, linewidth=0, marker=".", mec="k")
+        ax.plot(xx, yy, linewidth=0, marker=".", mec="k", mfc="w", markersize=8)
 
     def pre_graficar_nodos_internos(self, fig, ax):
         # dibujo las fibras (los segmentos)
