@@ -1032,7 +1032,7 @@ class Malla(object):
         if byn:
             mi_colormap = plt.cm.gray_r
             # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
-            mi_colormap = self.truncate_colormap(mi_colormap, 0.4, 1.0)
+            mi_colormap = self.truncate_colormap(mi_colormap, 0.2, 0.6)
         else:
             mi_colormap = plt.cm.jet
         if color_por == "lamr":

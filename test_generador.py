@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 # =====
 # Calcular mallas y escribirlas
 Dm = 1.0
-nfibs = 10
-ncaps = 3
+nfibs = 0.3
+ncaps = 1
 
-dls_rel = [.05]
-devangs_deg = [20.]
-Ls = [100.]
+dls_rel = [.1]
+devangs_deg = [0.]
+Ls = [10., 100., 1000.]
 
 start = time.time()
 for L in Ls:
@@ -21,14 +21,20 @@ for L in Ls:
         dl = dl_rel * L
         for devang_deg in devangs_deg:
             devang = devang_deg*np.pi/180.
-            for nm in range(1,2):
+            for nm in range(1,11):
                 print "{:05.2f}  {:05.2f}  {:07d}".format(dl_rel,devang_deg,nm)
                 mc = Mc(L, Dm)
                 for i in range(1,ncaps+1):
                     mc.make_capa2(dl, Dm, devang, nfibs)
                 # mc.intersectar_fibras()
-                # nombrearchivo = "mallas/" + "L_" + "{:06.1f}".format(L) + "dl_" + "{:05.2f}".format(dl_rel) + "_devang_" + "{:05.2f}".format(devang_deg) + "_nm_" + "{:07d}".format(nm) + ".txt"
-                nombrearchivo = "Malla.txt"
+                nombrearchivo = "mallas/" + \
+                                "L_" + "{:08.1f}".format(L) + \
+                                "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                "_ncaps_" + "{:07d}".format(ncaps) + \
+                                "_nm_" + "{:07d}".format(nm) + \
+                                ".txt"
+                # nombrearchivo = "Malla.txt"
                 mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start
 
@@ -49,7 +55,7 @@ print "tiempo pregraficar: ", time.time() - start
 # fig,ax = plt.subplots()
 # mc2.pre_graficar_fibras(fig,ax,byn=False, color_por="fibra")
 # mc2.pre_graficar_nodos_interseccion(fig,ax)
-
+# ax.set_facecolor('black')
 plt.show()
 
 

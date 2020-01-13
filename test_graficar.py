@@ -5,18 +5,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# L = 100.
-# Dm = 1.
-# nfibs = 10
-# dl = 0.1 * L
-# devang = 10. * np.pi/180.
-# ncaps = 1
-# mc = Mc(L,Dm)
-# for nc in range(1,1+ncaps):
-#     mc.make_capa2(dl, Dm, devang, nfibs)
-# mc.guardar_en_archivo("Malla.txt")
+Dm = 1.0
+nfibs = 0.3
+ncaps = 1
 
+dls_rel = [.1]
+devangs_deg = [0.]
+Ls = [10., 100., 1000., 10000.]
+Ls = [10., 100., 1000.]
 
+nmallas = 1
+
+start = time.time()
+for L in Ls:
+    for dl_rel in dls_rel:
+        dl = dl_rel * L
+        for devang_deg in devangs_deg:
+            devang = devang_deg*np.pi/180.
+            for nm in range(1,nmallas+1):
+                print "{:05.2f}  {:05.2f}  {:07d}".format(dl_rel,devang_deg,nm)
+                nombrearchivo = "mallas/" + \
+                                "L_" + "{:08.1f}".format(L) + \
+                                "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                "_ncaps_" + "{:07d}".format(ncaps) + \
+                                "_nm_" + "{:07d}".format(nm) + \
+                                ".txt"
+                # nombrearchivo = "Malla.txt"
+                print nombrearchivo
+                print "leyendo malla"
+                mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+                print "pregraficando"
+                fig, ax = plt.subplots()
+                mc.pre_graficar_bordes(fig, ax)
+                mc.pre_graficar_fibras(fig, ax, byn=True, color_por="fibra")
+print "tiempo pregraf: ", time.time() - start
+
+plt.show()
 
 
 # ploteo la malla original
@@ -25,7 +50,15 @@ mc = Mc.leer_de_archivo("Malla.txt")
 fig1,ax1 = plt.subplots()
 mc.pre_graficar_bordes(fig1, ax1)
 mc.pre_graficar_fibras(fig1, ax1, byn=True, color_por="capa")
-mc.pre_graficar_nodos_interseccion(fig1,ax1)
+# mc.pre_graficar_nodos_interseccion(fig1,ax1)
+
+# ploteo la malla original
+print "leyendo malla"
+mc = Mc.leer_de_archivo("Malla.txt")
+fig12,ax12 = plt.subplots()
+mc.pre_graficar_bordes(fig12, ax12)
+mc.pre_graficar_fibras(fig12, ax12, byn=False, color_por="lamr")
+# mc.pre_graficar_nodos_interseccion(fig12,ax12)
 
 # ploteo la malla intersectada por fortran
 print "leyendo malla intersectada"
@@ -64,6 +97,7 @@ ms.pre_graficar_0(fig3,ax3, plotnodos=True, maxnfibs=20000)
 
 
 fig1.savefig("Malla.pdf", bbox_inches='tight')
+fig12.savefig("Malla2.pdf", bbox_inches='tight')
 fig2.savefig("Malla_i.pdf", bbox_inches='tight')
 fig3.savefig("Malla_s.pdf", bbox_inches='tight')
 # fig4.savefig("Malla_sd.pdf", bbox_inches='tight')
