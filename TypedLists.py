@@ -92,13 +92,39 @@ class Lista_de_listas_de_dos_enteros(collections.MutableSequence):
     def __str__(self):
         return str(self.lista)
 
+class Lista_de_booleanos(collections.MutableSequence):
+    def __init__(self):
+        self.lista = list()
+
+    def check(self, v):
+        # cada item debe ser un booleano
+        if not isinstance(v,bool):
+            raise ValueError, v
+
+    def __len__(self): return len(self.lista)
+
+    def __getitem__(self, i): return self.lista[i]
+
+    def __delitem__(self, i): del self.lista[i]
+
+    def __setitem__(self, i, v):
+        self.check(v)
+        self.lista[i] = v
+
+    def insert(self, i, v):
+        self.check(v)
+        self.lista.insert(i, v)
+
+    def __str__(self):
+        return str(self.lista)
+
 
 class Lista_de_enteros(collections.MutableSequence):
     def __init__(self):
         self.lista = list()
 
     def check(self, v):
-        # cada item debe ser una lista de integers 0, 1 o 2 (continuacion, frontera o interseccion)
+        # cada item debe ser un entero
         if not isinstance(v,int):
             raise ValueError, v
 

@@ -4,48 +4,43 @@ import time
 from matplotlib import pyplot as plt
 import numpy as np
 
-L = 100.0
-Dm = 1.0
-mc = Mc(L, Dm)
-devangle = 19. * np.pi / 180.
-dl = 0.04 * L
-nfibs = 100
-for i in range(1):
-    mc.make_capa2(dl, Dm, devangle, nfibs)
+def get_histograma_lamr(mc, lamr_min=None, lamr_max=None, nbins=5, opcion="fibras"):
+    if opcion=="fibras":
+        lamsr = mc.calcular_enrulamientos()
+        lrs, dlr, conteo = mc.calcular_distribucion_de_enrulamiento(lamr_min=lamr_min, lamr_max=lamr_max, n=nbins)
+    elif opcion=="interfibras":
+        lamsr = mc.calcular_enrulamientos_de_interfibras()
+        lrs, dlr, conteo = mc.calcular_distribucion_de_enrulamiento_de_interfibras(lamr_min=lamr_min, lamr_max=lamr_max, n=nbins)
+    else:
+        raise ValueError
+    # print np.max
+    frecs = np.array(conteo, dtype=float) / float(np.sum(conteo))
+    # print lrs
+    # print dlr
+    # print conteo
+    # print np.array(conteo, dtype=float)/float(np.sum(conteo))
+    # print np.sum(conteo)
+    max_lamr = np.max(lamsr)
+    index = np.where( lamsr == max_lamr)
+    # print index, max_lamr
+    return lrs, dlr, conteo, frecs
 
-# mc = Mc.leer_de_archivo("Malla.txt")
+ncaps = 10
+L = 50.
+devang_deg = 10.
+dl_rel = 1.
+nm = 1
+nombrearchivo = "mallas/" + \
+                "L_" + "{:08.1f}".format(L) + \
+                "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                "_devang_" + "{:05.2f}".format(devang_deg) + \
+                "_ncaps_" + "{:07d}".format(ncaps) + \
+                "_nm_" + "{:07d}".format(nm) + \
+                "_i.txt"
 
-# mc.cambiar_capas(10)
+mc = Mc.leer_de_archivo(archivo=nombrearchivo)
 
-# start = time.clock()
-# mc.intersectar_fibras()
-# print time.clock() - start
-
-nombrearchivo = "mallas/dl_" + "{:05.2f}".format(dl) + \
-                "_devang_" + "{:05.2f}".format(devangle*180./np.pi) + \
-                "_nf_" + "{:07d}".format(nfibs) + \
-                ".txt"
-# mc.guardar_en_archivo(nombrearchivo)
-
-lamr_min = 1.0
-lamr_max = 1.5
-n = 5
-
-lamsr = mc.calcular_enrulamientos()
-print np.max
-
-lrs, dlr, frecs = mc.calcular_distribucion_de_enrulamiento(lamr_min=lamr_min, lamr_max=lamr_max, n=n)
-print lrs
-print dlr
-print frecs
-print np.array(frecs, dtype=float)/float(np.sum(frecs))
-print np.sum(frecs)
-
-
-
-max_lamr = np.max(lamsr)
-index = np.where( lamsr == max_lamr)
-print index, max_lamr
+lrs, dlr, conteo, frecs = get_histograma_lamr(mc, lamr_min=1.0, lamr_max=2.0, nbins=10, opcion="interfibras")
 
 # fig1, ax1 = plt.subplots()
 # mc.pre_graficar_bordes(fig1, ax1)
@@ -54,14 +49,13 @@ print index, max_lamr
 
 fig2, ax2 = plt.subplots()
 mc.pre_graficar_bordes(fig2, ax2)
-mc.pre_graficar_fibras(fig2, ax2, lamr_min=lamr_min, lamr_max=lamr_max, byn=False)
-mc.pre_graficar_nodos_interseccion(fig2, ax2)
+mc.pre_graficar_interfibras(fig2, ax2, lamr_min=None, lamr_max=None, byn=False, color_por="lamr")
+mc.pre_graficar_nodos_interseccion(fig2, ax2, markersize=2)
 
-frecs = np.array(frecs, dtype=float) / float(np.sum(frecs))
 fig3, ax3 = plt.subplots()
 bars1 = ax3.bar(lrs, frecs, dlr*0.8)
-ax3.set_ylim(bottom=0.0, top=1.0)
-ax3.set_xlim(left=1.0, right=2.0)
+# ax3.set_ylim(bottom=0.0, top=1.0)
+# ax3.set_xlim(left=1.0, right=2.0)
 
 
 for lr, frec in zip(lrs,frecs):

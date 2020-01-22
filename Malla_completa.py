@@ -17,6 +17,7 @@ import matplotlib.colors as colors
 import TypedLists
 from Aux import iguales, calcular_interseccion_entre_segmentos as calcular_interseccion, find_string_in_file
 from Aux import calcular_longitud_de_segmento
+from Aux import calcular_angulo_de_segmento
 
 
 class Nodos(object):
@@ -50,7 +51,8 @@ class Segmentos(object):
         seg_con es la conectividad (2 nodos) del segmento
         coors son las coordenadas (lista de listas de a dos floats) de todos los nodos
         (con todos los nodos hasta el momento de crear este segmento esta bien,
-        alcanza con que esten presentes en la lista los dos nodos de seg_con) """
+        alcanza con que esten presentes en la lista los dos nodos de seg_con)
+        intersec indica si el segmento ha sido intersectado aun o no"""
         self.con.append(seg_con)
         try:
             longitud, angulo = self.calcular_long_y_theta(seg_con, coors)
@@ -371,6 +373,24 @@ class Malla(object):
         theta_f = theta_f / float(nsegs)
         return theta_f
 
+    def calcular_orientacion_extremo_extremo_de_una_fibra(self, f):
+        fcon = self.fibs.con[f]
+        s0 = fcon[0]
+        s1 = fcon[1]
+        n0 = self.segs.con[s0][0]
+        n1 = self.segs.con[s1][1]
+        r0 = self.nods.r[n0]
+        r1 = self.nods.r[n1]
+        theta_2pi = calcular_angulo_de_segmento(r0,r1)
+        if theta_2pi>=np.pi:
+            theta = theta_2pi - np.pi
+        else:
+            theta = theta_2pi
+        if theta_2pi < 0.:
+            raise ValueError
+        return theta
+
+
     def make_fibra(self, dl, d, dtheta):
         """ tengo que armar una lista de segmentos
         nota: todos los indices (de nodos, segmentos y fibras)
@@ -544,7 +564,7 @@ class Malla(object):
             f_con.append(nsegs-1)
         # al final recorto la fibra y la almaceno
         self.nods.tipos[-1] = 1
-        self.trim_fibra_at_frontera(f_con)
+        # self.trim_fibra_at_frontera(f_con) # lo comento porque a veces quedan segmentos super pequenos
         self.fibs.add_fibra(f_con, dl, d, dtheta)
         return len(self.fibs.con) - 1 # devuelvo el indice de la fibra
 
@@ -705,7 +725,8 @@ class Malla(object):
         """ calcular las orientaciones de las fibras de toda la malla """
         thetas_f = list()
         for f, fcon in enumerate(self.fibs.con):
-            theta_f = self.calcular_orientacion_de_una_fibra(f)
+            # theta_f = self.calcular_orientacion_de_una_fibra(f)
+            theta_f = self.calcular_orientacion_extremo_extremo_de_una_fibra(f)
             thetas_f.append(theta_f)
         return thetas_f
 
@@ -861,7 +882,7 @@ class Malla(object):
         dString = "*Segmentos \n" + str( len(self.segs.con) ) + "\n"
         fid.write(dString)
         for s in range( len(self.segs.con) ):
-            n0, n1 = self.segs.con[s]
+            n0, n1 = self.segs.con[s] # conectividad del segmento (nodo inicial n0 y nodo final n1)
             fmt = "{:12d}"*3
             dString = fmt.format(s, n0, n1) +"\n"
             fid.write(dString)
@@ -955,7 +976,8 @@ class Malla(object):
             try:
                 malla.segs.add_segmento(s_con, coors)
             except ValueError:
-                raise ValueError("Error, segmento de longitud nula!!")
+                print "Segmento de long nula"
+                # raise ValueError("Error, segmento de longitud nula!!")
         # le asigno las fibras
         for i in range(num_f):
             f_con = fibs[i]
@@ -1107,7 +1129,10 @@ class Malla(object):
         xx = [ list() for infb_con in  infbs_con ]
         yy = [ list() for infb_con in  infbs_con ]
         grafs = list()
+        print "-"
+        print "graficando interfibras"
         for i, infb_con in enumerate(infbs_con): # recorro las interfibras
+            print i,
             # antes de recorrer los segmentos de cada interfibra
             # el primer nodo del primer segmento lo agrego antes del bucle
             s = infb_con[0] # primer segmento de la interfibra i
@@ -1128,6 +1153,7 @@ class Malla(object):
             elif color_por == "nada":
                 col = "k"
             grafs.append( ax.plot(xx[i], yy[i], linestyle="-", marker="", label=str(i), color=col) )
+        print "-"
         if not byn and barracolor:
             sm._A = []
             fig.colorbar(sm)
@@ -1152,7 +1178,7 @@ class Malla(object):
             yy[f].append(r[1])
             grafs.append( ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k") )
 
-    def pre_graficar_nodos_interseccion(self, fig, ax):
+    def pre_graficar_nodos_interseccion(self, fig, ax, markersize=8):
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = list()
@@ -1162,7 +1188,7 @@ class Malla(object):
             if self.nods.tipos[n] == 2:
                 xx.append(self.nods.r[n][0])
                 yy.append(self.nods.r[n][1])
-        ax.plot(xx, yy, linewidth=0, marker=".", mec="k", mfc="w", markersize=8)
+        ax.plot(xx, yy, linewidth=0, marker=".", mec="k", mfc="w", markersize=markersize)
 
     def pre_graficar_nodos_internos(self, fig, ax):
         # dibujo las fibras (los segmentos)

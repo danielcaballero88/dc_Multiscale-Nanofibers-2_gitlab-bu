@@ -7,38 +7,52 @@ import matplotlib.pyplot as plt
 
 Dm = 1.0
 nfibs = 0.3
-ncaps = 1
 
-dls_rel = [.1]
-devangs_deg = [0.]
-Ls = [10., 100., 1000., 10000.]
-Ls = [10., 100., 1000.]
+ncapss = [1]
+Ls = [50.]
+devangs_deg = [5.]
+dls_rel = [1.]
 
-nmallas = 1
+nmallas = 2
 
 start = time.time()
-for L in Ls:
-    for dl_rel in dls_rel:
-        dl = dl_rel * L
-        for devang_deg in devangs_deg:
-            devang = devang_deg*np.pi/180.
-            for nm in range(1,nmallas+1):
-                print "{:05.2f}  {:05.2f}  {:07d}".format(dl_rel,devang_deg,nm)
-                nombrearchivo = "mallas/" + \
-                                "L_" + "{:08.1f}".format(L) + \
-                                "_dlrel_" + "{:05.2f}".format(dl_rel) + \
-                                "_devang_" + "{:05.2f}".format(devang_deg) + \
-                                "_ncaps_" + "{:07d}".format(ncaps) + \
-                                "_nm_" + "{:07d}".format(nm) + \
-                                ".txt"
-                # nombrearchivo = "Malla.txt"
-                print nombrearchivo
-                print "leyendo malla"
-                mc = Mc.leer_de_archivo(archivo=nombrearchivo)
-                print "pregraficando"
-                fig, ax = plt.subplots()
-                mc.pre_graficar_bordes(fig, ax)
-                mc.pre_graficar_fibras(fig, ax, byn=True, color_por="fibra")
+for ncaps in ncapss:
+    for L in Ls:
+        for dl_rel in dls_rel:
+            dl = dl_rel * Dm
+            for devang_deg in devangs_deg:
+                devang = devang_deg*np.pi/180.
+                for nm in range(1,nmallas+1):
+                    print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
+                    nombrearchivo = "mallas/" + \
+                                    "L_" + "{:08.1f}".format(L) + \
+                                    "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                    "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                    "_ncaps_" + "{:07d}".format(ncaps) + \
+                                    "_nm_" + "{:07d}".format(nm) + \
+                                    ".txt"
+                    # nombrearchivo = "Malla.txt"
+                    print nombrearchivo
+                    print "leyendo malla"
+                    mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+                    print "pregraficando"
+                    fig = plt.figure(figsize=(10,4))
+                    ax1 = fig.add_subplot(121)
+                    mc.pre_graficar_bordes(fig, ax1)
+                    mc.pre_graficar_fibras(fig, ax1, byn=False, color_por="lamr")
+                    ax2 = fig.add_subplot(122)
+                    nombrearchivo = "mallas/" + \
+                                    "L_" + "{:08.1f}".format(L) + \
+                                    "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                    "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                    "_ncaps_" + "{:07d}".format(ncaps) + \
+                                    "_nm_" + "{:07d}".format(nm) + \
+                                    "_i.txt"
+                    # nombrearchivo = "Malla.txt"
+                    mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+                    mc.pre_graficar_bordes(fig, ax2)
+                    mc.pre_graficar_interfibras(fig, ax2, byn=False, color_por="interfibra")
+                    mc.pre_graficar_nodos_interseccion(fig, ax2, markersize=4)
 print "tiempo pregraf: ", time.time() - start
 
 plt.show()
@@ -70,11 +84,20 @@ mc.pre_graficar_nodos_interseccion(fig2,ax2)
 
 # ploteo la malla simplificada por fortran
 print "leyendo mallita"
-ms = Ms.leer_desde_archivo("Malla_s.txt")
+ms = Ms.leer_desde_archivo("Malla_i_s.txt")
 fig3,ax3 = plt.subplots()
 ms.pre_graficar_bordes(fig3, ax3)
 ms.pre_graficar_0(fig3,ax3, plotnodos=True, maxnfibs=20000)
 # ms.pre_graficar(fig3,ax3, lam_min=1.0, lam_max=1.2, maxnfibs=20000)
+
+# ploteo la malla simplificada por fortran
+print "leyendo mallita"
+ms = Ms.leer_desde_archivo("Malla_i_s_e.txt")
+fig4,ax4 = plt.subplots()
+ms.pre_graficar_bordes(fig4, ax4)
+ms.pre_graficar(fig4,ax4, maxnfibs=20000)
+
+plt.show()
 
 # # ploteo afin
 # Fmacro = np.array(
