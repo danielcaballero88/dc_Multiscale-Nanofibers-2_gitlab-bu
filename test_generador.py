@@ -2,9 +2,15 @@ from Malla_completa import Malla as Mc
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from OrientationDistributionFunctions import NormalTruncada
 
 # fid1 = open("mallas/datos.txt", "w")
 
+# IMPORTANTE: la funcion distribucion de orientacion fundisor es periodica en pi: theta = theta + pi
+# porque cada fibra se genera con un angulo respecto de la horizontal que no tiene un sentido tipo vector,
+# sino que es el angulo de una recta
+fundisor = NormalTruncada(loc=0.5*np.pi, scale=0.2*np.pi, lower=0., upper=np.pi)
+# fundisor = None
 # =====
 # Calcular mallas y escribirlas
 Dm = 1.0
@@ -12,7 +18,7 @@ nfibs = 0.3
 
 ncapss = [10]
 Ls = [50.]
-devangs_deg = [10.]
+devangs_deg = [5.]
 dls_rel = [1.]
 
 nmallas = 1
@@ -28,7 +34,7 @@ for ncaps in ncapss:
                     print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
                     mc = Mc(L, Dm)
                     for i in range(1,ncaps+1):
-                        mc.make_capa2(dl, Dm, devang, nfibs)
+                        mc.make_capa2(dl, Dm, devang, nfibs, orient_distr=fundisor)
                     # mc.intersectar_fibras()
                     nombrearchivo = "mallas/" + \
                                     "L_" + "{:08.1f}".format(L) + \
@@ -37,6 +43,7 @@ for ncaps in ncapss:
                                     "_ncaps_" + "{:07d}".format(ncaps) + \
                                     "_nm_" + "{:07d}".format(nm) + \
                                     ".txt"
+                    nombrearchivo = "mallas/stdev_0.2.txt"
                     # nombrearchivo = "Malla.txt"
                     mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start

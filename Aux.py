@@ -173,9 +173,9 @@ def calcular_interseccion_entre_segmentos(r00, r01, r10, r11):
     elif iguales(chi_in,dl_0):
         nin_s0 = 1
     #
-    if iguales(x_in,x10) and iguales(y_in,y10):
+    if iguales(x_in,x10) and iguales(y_in,y10, tol=1.0e-2):
         nin_s1 = 0
-    elif iguales(x_in,x11) and iguales(y_in,y11):
+    elif iguales(x_in,x11) and iguales(y_in,y11, tol=1.0e-2):
         nin_s1 = 1
     # ---
     # posibilidad 4 (extremo-extremo)
