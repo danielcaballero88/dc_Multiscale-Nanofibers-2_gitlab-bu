@@ -774,7 +774,7 @@ class Malla(object):
             lamsr.append( loco/lete )
         return lamsr
 
-    def calcular_distribucion_de_enrulamiento(self, rec_lamsr=None, lamr_min=None, lamr_max=None, n=10):
+    def calcular_distribucion_de_enrulamiento(self, rec_lamsr=None, lamr_min=None, lamr_max=None, n=10, binwidth=None):
         """ calcular la distribucion de enrulamientos (pdf)
         para eso calculo el histograma y luego normalizo con el area
         parametros de entrada
@@ -796,46 +796,41 @@ class Malla(object):
             lamr_min = np.min(lamsr)
         if lamr_max is None:
             lamr_max = np.max(lamsr)
+        # me fijo si hay imposicion de ancho de bin, entonces calculo con eso el numero de bins
+        if binwidth is not None:
+            n = int((lamr_max - lamr_min) / binwidth + 0.5) # es el entero mas cercano
         conteo, x_edges = np.histogram(lamsr, bins=n, range=(lamr_min, lamr_max))
         delta = (lamr_max - lamr_min) / n
-        pdf = conteo / float(np.sum(conteo)) / delta
+        # pdf = conteo / float(np.sum(conteo)) / delta
         x = x_edges[:-1] + 0.5*delta
-        return x, delta, pdf
+        return x, delta, conteo
 
-    def get_histograma_lamr(self, lamr_min=None, lamr_max=None, nbins=5, opcion="fibras"):
+    def get_histograma_lamr(self, lamr_min=None, lamr_max=None, nbins=5, binwidth=None, opcion="fibras"):
         if opcion=="fibras":
             lamsr = self.calcular_enrulamientos()
-            lrs, dlr, conteo = self.calcular_distribucion_de_enrulamiento(lamr_min=lamr_min, lamr_max=lamr_max, n=nbins)
         elif opcion=="interfibras":
             lamsr = self.calcular_enrulamientos_de_interfibras()
-            lrs, dlr, conteo = self.calcular_distribucion_de_enrulamiento_de_interfibras(lamr_min=lamr_min, lamr_max=lamr_max, n=nbins)
         else:
             raise ValueError
-        # print np.max
+        #
+        lrs, dlr, conteo = self.calcular_distribucion_de_enrulamiento(rec_lamsr=lamsr, lamr_min=lamr_min, lamr_max=lamr_max, n=nbins, binwidth=binwidth)
         frecs = np.array(conteo, dtype=float) / float(np.sum(conteo))
-        # print lrs
-        # print dlr
-        # print conteo
-        # print np.array(conteo, dtype=float)/float(np.sum(conteo))
-        # print np.sum(conteo)
-        # max_lamr = np.max(lamsr)
-        # index = np.where( lamsr == max_lamr)
-        # print index, max_lamr
-        return lrs, dlr, conteo, frecs
+        pdf = frecs / dlr
+        return lrs, dlr, conteo, frecs, pdf
 
     def get_histograma_orientaciones(self, nbins=5, opcion="fibras"):
         if opcion=="fibras":
             rec_thetas = self.calcular_orientaciones() # todos los angulos de las fibras
             # thetas a continuacion son los angulos medio de cada bin
-            thetas, dlr, conteo = self.calcular_distribucion_de_orientaciones(n=nbins)
         elif opcion=="interfibras":
             raise NotImplementedError
         else:
             raise ValueError
-        # print np.max
+        #
+        thetas, dth, conteo = self.calcular_distribucion_de_orientaciones(rec_orientaciones=rec_thetas, n=nbins)
         frecs = np.array(conteo, dtype=float) / float(np.sum(conteo))
-        pdf = frecs / dlr
-        return thetas, dlr, conteo, frecs, pdf
+        pdf = frecs / dth
+        return thetas, dth, conteo, frecs, pdf
 
     def calcular_enrulamientos_de_interfibras(self):
         """ calcular para todas las interfibras sus longitudes de contorno y
@@ -1077,7 +1072,7 @@ class Malla(object):
             cmap(np.linspace(minval, maxval, n)))
         return new_cmap
 
-    def pre_graficar_fibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada", colores_cm=None):
+    def pre_graficar_fibras(self, fig, ax, ncapas=None, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada", colores_cm=None, ncolores_cm=20):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         if byn:
@@ -1087,7 +1082,7 @@ class Malla(object):
         else:
             mi_colormap = plt.cm.jet
             if colores_cm is not None:
-                mi_colormap = colors.LinearSegmentedColormap.from_list("mi_colormap", colores_cm, N=20)
+                mi_colormap = colors.LinearSegmentedColormap.from_list("mi_colormap", colores_cm, N=ncolores_cm)
         if color_por == "lamr":
             if lamr_min is None:
                 lamr_min = np.min(lamsr)
@@ -1105,7 +1100,11 @@ class Malla(object):
         xx = [ list() for f in  self.fibs.con ]
         yy = [ list() for f in  self.fibs.con ]
         grafs = list()
-        for c, c_con in enumerate(self.caps.con): # recorro las capas
+        if ncapas is None:
+            caps_con = self.caps.con
+        else:
+            caps_con = self.caps.con[:ncapas]
+        for c, c_con in enumerate(caps_con): # recorro las capas
             for f in c_con: # recorro las fibra de la capa
                 f_con = self.fibs.con[f]
                 # antes de recorrer los segmentos de cada fibra

@@ -4,29 +4,56 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-nombresarchivos = ["mallas/uniforme.txt", "mallas/stdev_0.1.txt", "mallas/stdev_0.2.txt"]
+cwd = "mallas/"
+nombresarchivos = ["volfrac_0.1_i.txt", "volfrac_0.3_i.txt"]
+nombresarchivos = [cwd + nombrearchivo for nombrearchivo in nombresarchivos]
+# nombresfigs = [cwd + "analisis_alineacion_" + item + "_malla.pdf" for item in ("uniforme", "moderada", "alta")]
+nombresfigs = ["volfrac_0.1_i.pdf", "volfrac_0.3_i.pdf"]
 
-for nombrearchivo in nombresarchivos:
+SMALL_SIZE = 8
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 18
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+for i, nombrearchivo in enumerate(nombresarchivos):
     print "leyendo malla"
     mc = Mc.leer_de_archivo(archivo=nombrearchivo)
     print "pregraficando"
     fig = plt.figure(figsize=(8,8))
     ax1 = fig.add_subplot(111)
     mc.pre_graficar_bordes(fig, ax1)
-    mc.pre_graficar_fibras(fig, ax1, byn=True, color_por="capa", colores_cm=[(1,0,0), (0,0,1), (1,0,0)], barracolor=False)
-    nombrefigura = nombrearchivo[:-4] + ".pdf"
-    fig.savefig(nombrefigura, bbox="tight")
+    mc.pre_graficar_fibras(fig, ax1, ncapas=None, byn=True, color_por="capa", colores_cm=[(1,0,0), (0,0,1), (1,0,0)], barracolor=False)
+    mc.pre_graficar_nodos_interseccion(fig, ax1)
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    # if i==0:
+    #     fig.tight_layout()
+    nombrefigura = nombresfigs[i]
+    # plt.show()
+    # fig.savefig(nombrefigura, bbox="tight")
 
-# plt.show()
+plt.show()
+
+
+
 
 # Dm = 1.0
 # nfibs = 0.3
 
 # ncapss = [10]
 # Ls = [50.]
-# devangs_deg = [5.]
+# devangs_deg = [5., 10., 20.]
 # dls_rel = [1.]
 # nmallas = 1
+
+# cwd = "mallas/"
+# nombresfigs = [cwd + "analisis_reclutamiento_devangmax_" + item + "_malla.pdf" for item in ("5", "10", "20")]
 
 # start = time.time()
 # for ncaps in ncapss:
@@ -37,22 +64,27 @@ for nombrearchivo in nombresarchivos:
 #                 devang = devang_deg*np.pi/180.
 #                 for nm in range(1,nmallas+1):
 #                     print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
-#                     nombrearchivo = "mallas/" + \
+#                     nombrearchivo = cwd + \
 #                                     "L_" + "{:08.1f}".format(L) + \
 #                                     "_dlrel_" + "{:05.2f}".format(dl_rel) + \
 #                                     "_devang_" + "{:05.2f}".format(devang_deg) + \
 #                                     "_ncaps_" + "{:07d}".format(ncaps) + \
 #                                     "_nm_" + "{:07d}".format(nm) + \
-#                                     ".txt"
-#                     nombrearchivo = "mallas/stdev_0.5.txt"
+#                                     "_i.txt"
 #                     print nombrearchivo
 #                     print "leyendo malla"
 #                     mc = Mc.leer_de_archivo(archivo=nombrearchivo)
 #                     print "pregraficando"
-#                     fig = plt.figure(figsize=(10,4))
-#                     ax1 = fig.add_subplot(121)
+#                     fig = plt.figure(figsize=(8,8))
+#                     ax1 = fig.add_subplot(111)
 #                     mc.pre_graficar_bordes(fig, ax1)
-#                     mc.pre_graficar_fibras(fig, ax1, byn=True, color_por="capa", colores_cm=[(1,0,0), (0,0,1), (1,0,0)])
+#                     mc.pre_graficar_fibras(fig, ax1, ncapas=2, byn=True, color_por="nada", colores_cm=[(1,0,0), (0,0,1), (1,0,0)])
+#                     ax1.set_xticks([])
+#                     ax1.set_yticks([])
+#                     i = devangs_deg.index(devang_deg)
+#                     nombrefig = nombresfigs[i]
+#                     fig.savefig(nombrefig, bbox="tight")
+#                     # plt.show()
 #                     # ax2 = fig.add_subplot(122)
 #                     # nombrearchivo = "mallas/" + \
 #                     #                 "L_" + "{:08.1f}".format(L) + \

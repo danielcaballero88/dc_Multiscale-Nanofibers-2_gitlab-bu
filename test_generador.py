@@ -9,8 +9,8 @@ from OrientationDistributionFunctions import NormalTruncada
 # IMPORTANTE: la funcion distribucion de orientacion fundisor es periodica en pi: theta = theta + pi
 # porque cada fibra se genera con un angulo respecto de la horizontal que no tiene un sentido tipo vector,
 # sino que es el angulo de una recta
-fundisor = NormalTruncada(loc=0.5*np.pi, scale=0.2*np.pi, lower=0., upper=np.pi)
-# fundisor = None
+# fundisor = NormalTruncada(loc=0.5*np.pi, scale=0.2*np.pi, lower=0., upper=np.pi)
+fundisor = None
 # =====
 # Calcular mallas y escribirlas
 Dm = 1.0
@@ -18,10 +18,10 @@ nfibs = 0.3
 
 ncapss = [10]
 Ls = [50.]
-devangs_deg = [5.]
+devangs_deg = [0.]
 dls_rel = [1.]
 
-nmallas = 1
+nmallas = 10
 
 start = time.time()
 for ncaps in ncapss:
@@ -43,8 +43,7 @@ for ncaps in ncapss:
                                     "_ncaps_" + "{:07d}".format(ncaps) + \
                                     "_nm_" + "{:07d}".format(nm) + \
                                     ".txt"
-                    nombrearchivo = "mallas/stdev_0.2.txt"
-                    # nombrearchivo = "Malla.txt"
+                    nombrearchivo = "mallas/" + "volfrac_" + "{:05.2f}".format(nfibs) + "_nm" + "{:07d}".format(nm) + ".txt"
                     mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start
 
