@@ -1072,13 +1072,13 @@ class Malla(object):
             cmap(np.linspace(minval, maxval, n)))
         return new_cmap
 
-    def pre_graficar_fibras(self, fig, ax, ncapas=None, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada", colores_cm=None, ncolores_cm=20):
+    def pre_graficar_fibras(self, fig, ax, ncapas=None, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada", linewidth=2, colores_cm=None, ncolores_cm=20):
         # preparo un mapa de colores mapeable por escalar
         lamsr = self.calcular_enrulamientos()
         if byn:
             mi_colormap = plt.cm.gray_r
             # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
-            mi_colormap = self.truncate_colormap(mi_colormap, 0.2, 0.6)
+            mi_colormap = self.truncate_colormap(mi_colormap, 0.1, 0.5)
         else:
             mi_colormap = plt.cm.jet
             if colores_cm is not None:
@@ -1131,7 +1131,7 @@ class Malla(object):
                     col = sm.to_rgba(theta)
                 elif color_por == "nada":
                     col = "k"
-                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col) )
+                grafs.append( ax.plot(xx[f], yy[f], linestyle="-", marker="", label=str(f), color=col, linewidth=linewidth) )
         if barracolor and color_por not in ("nada", "fibra"):
             sm._A = []
             cbar = fig.colorbar(sm)
@@ -1139,7 +1139,7 @@ class Malla(object):
                 cbar.set_ticks(range(len(self.caps.con)))
 
 
-    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada"):
+    def pre_graficar_interfibras(self, fig, ax, lamr_min=None, lamr_max=None, byn=False, barracolor=True, color_por="nada", colormap="jet", colores_cm=None, ncolores_cm=20):
         # preparo un mapa de colores mapeable por escalar
         infbs_con = self.calcular_conectividad_de_interfibras()
         lamsr = self.calcular_enrulamientos_de_interfibras()
@@ -1148,7 +1148,14 @@ class Malla(object):
             # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
             mi_colormap = self.truncate_colormap(mi_colormap, 0.4, 1.0)
         else:
-            mi_colormap = plt.cm.jet
+            if colores_cm is not None:
+                mi_colormap = colors.LinearSegmentedColormap.from_list("mi_colormap", colores_cm, N=ncolores_cm)
+            elif colormap == "jet":
+                mi_colormap = plt.cm.jet
+            elif colormap == "prism":
+                mi_colormap = plt.cm.prism
+            elif colormap == "Dark2":
+                mi_colormap = plt.cm.Dark2
         if color_por == "lamr":
             if lamr_min is None:
                 lamr_min = np.min(lamsr)
@@ -1166,8 +1173,17 @@ class Malla(object):
         grafs = list()
         print "-"
         print "graficando interfibras"
+        pcc = 0.
+        nif = float(len(infbs_con))
+        pctp = np.arange(0., 101., 10.).tolist()
+        pcpd = np.zeros(len(pctp), dtype=bool).tolist()
         for i, infb_con in enumerate(infbs_con): # recorro las interfibras
-            print i,
+            pc = round(float(i)/nif * 100.,0)
+            if pc in pctp:
+                ipc = pctp.index(pc)
+                if not pcpd[ipc]:
+                    print "{:4.0f}% ".format(pc),
+                    pcpd[ipc] = True
             # antes de recorrer los segmentos de cada interfibra
             # el primer nodo del primer segmento lo agrego antes del bucle
             s = infb_con[0] # primer segmento de la interfibra i
@@ -1193,12 +1209,12 @@ class Malla(object):
             sm._A = []
             fig.colorbar(sm)
 
-    def pre_graficar_nodos_frontera(self, fig, ax):
+    def pre_graficar_nodos_frontera(self, fig, ax, markersize=8):
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = [ list() for f in  self.fibs.con ]
         yy = [ list() for f in  self.fibs.con ]
-        grafs = list() # un plot para cada fibra
+        # grafs = list() # un plot para cada fibra
         for f in range(len(self.fibs.con)):  # f es un indice
             # el primer nodo y el ultimo de cada fibra son fronteras
             s = self.fibs.con[f][0] # obtengo el indice del primer segmento de la fibra numero f
@@ -1211,19 +1227,20 @@ class Malla(object):
             r = self.nods.r[n] # obtengo las coordenadas del nodo numero n
             xx[f].append(r[0])
             yy[f].append(r[1])
-            grafs.append( ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k") )
+            # grafs.append( ax.plot(xx[f], yy[f], linewidth=0, marker="x", mec="k", markersize=markersize) )
+        ax.plot(xx, yy, linewidth=0, marker="o", mec="k", mfc="w", markersize=markersize)
 
     def pre_graficar_nodos_interseccion(self, fig, ax, markersize=8):
         # dibujo las fibras (los segmentos)
         # preparo las listas, una lista para cada fibra
         xx = list()
         yy = list()
-        grafs = list() # un plot para cada fibra
+        # grafs = list() # un plot para cada fibra
         for n in range(len(self.nods.r)):
             if self.nods.tipos[n] == 2:
                 xx.append(self.nods.r[n][0])
                 yy.append(self.nods.r[n][1])
-        ax.plot(xx, yy, linewidth=0, marker=".", mec="k", mfc="w", markersize=markersize)
+        ax.plot(xx, yy, linewidth=0, marker="o", mec="k", mfc="w", markersize=markersize)
 
     def pre_graficar_nodos_internos(self, fig, ax):
         # dibujo las fibras (los segmentos)

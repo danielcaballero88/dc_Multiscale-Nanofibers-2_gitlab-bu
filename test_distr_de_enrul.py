@@ -27,70 +27,99 @@ def graficar_histograma(x, y, figax=None, x_offset=0., dx_mult=1., edgecolor="k"
     ax.tick_params(axis='both', which='major', pad=15)
     return fig, ax
 
-# Dm = 1.0
-# nfibs = 0.3
+Dm = 1.0
+nfibs = 0.3
 
-# ncapss = [10]
-# Ls = [50.]
-# devangs_deg = [25]
-# dls_rel = [2.1]
+ncapss = [5]
+Ls = [250.]
+devangs_deg = [17.5]
+dls_rel = [5.]
 
-# nmallas = 5
+nmallas = 3
 
-# cwd = "mallas/"
+cwd = "mallas/"
 
-# start = time.time()
-# for ncaps in ncapss:
-#     for L in Ls:
-#         for dl_rel in dls_rel:
-#             dl = dl_rel * Dm
-#             for devang_deg in devangs_deg:
-#                 devang = devang_deg*np.pi/180.
-#                 for nm in range(1,nmallas+1):
-#                     print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
-#                     mc = Mc(L, Dm)
-#                     for i in range(1,ncaps+1):
-#                         mc.make_capa2(dl, Dm, devang, nfibs, orient_distr=None)
-#                     # mc.intersectar_fibras()
-#                     nombrearchivo = cwd + \
-#                                     "L_" + "{:08.1f}".format(L) + \
-#                                     "_dlrel_" + "{:05.2f}".format(dl_rel) + \
-#                                     "_devang_" + "{:05.2f}".format(devang_deg) + \
-#                                     "_ncaps_" + "{:07d}".format(ncaps) + \
-#                                     "_nm_" + "{:07d}".format(nm) + \
-#                                     ".txt"
-#                     mc.guardar_en_archivo(nombrearchivo)
-# print "tiempo generacion: ", time.time() - start
+start = time.time()
+for ncaps in ncapss:
+    for L in Ls:
+        for dl_rel in dls_rel:
+            dl = dl_rel * Dm
+            for devang_deg in devangs_deg:
+                devang = devang_deg*np.pi/180.
+                for nm in range(1,nmallas+1):
+                    print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
+                    mc = Mc(L, Dm)
+                    for i in range(1,ncaps+1):
+                        mc.make_capa2(dl, Dm, devang, nfibs, orient_distr=None)
+                    # mc.intersectar_fibras()
+                    nombrearchivo = cwd + \
+                                    "L_" + "{:08.1f}".format(L) + \
+                                    "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                    "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                    "_ncaps_" + "{:07d}".format(ncaps) + \
+                                    "_nm_" + "{:07d}".format(nm) + \
+                                    ".txt"
+                    mc.guardar_en_archivo(nombrearchivo)
+                    lrs, dlr, conteo, frecs, pdf = mc.get_histograma_lamr(lamr_min=1., lamr_max=1.8, nbins=10, binwidth=None, opcion="fibras")
+                    for x,y in zip(lrs,frecs):
+                        print ("{:20.8f}"*2).format(x,y)
+                    print np.sum(conteo), len(mc.fibs.con)
+                    frecs[-1] = 0. # para que quede mas lindo el grafico
+                    fig = plt.figure(figsize=(16,8))
+                    ax2 = fig.add_subplot(122)
+                    fig, ax2 = graficar_histograma(lrs, frecs, figax=(fig,ax2))
+                    ax2.set_xlabel(r"Reclutamiento ($\lambda_r$)")
+                    ax2.set_ylabel("Fraccion de fibras")
+                    # ax2.set_xticks([])
+                    # ax2.set_yticks([])
+                    # grafico la malla al lado para verla
+                    ax1 = fig.add_subplot(121)
+                    mc.pre_graficar_bordes(fig, ax1)
+                    mc.pre_graficar_fibras(fig, ax1, ncapas=None, byn=True, color_por="capa", linewidth=1, colores_cm=[(1,0,0), (0,0,1), (1,0,0)], barracolor=False)
+                    mc.pre_graficar_nodos_interseccion(fig, ax1)
+                    ax1.set_xticks([])
+                    ax1.set_yticks([])
+                    fig.tight_layout()
+print "tiempo generacion: ", time.time() - start
 
-cwd = "/home/dancab/Documents/academia/doctorado/articulos/multiscale_nanofibers_randomRVE_2/Analisis_geometria/04_tortuosidad_comparacion/"
-nombresarchivos = ["malla_pa_comparar.txt"]
-nombresarchivos = [cwd + nombrearchivo for nombrearchivo in nombresarchivos]
-# nombresfigs = [cwd + "analisis_alineacion_" + item + "_malla.pdf" for item in ("uniforme", "moderada", "alta")]
-nombresfigs = ["malla_pa_comparar_histogram.pdf"]
-nombresfigs = [cwd + nombrefig for nombrefig in nombresfigs]
-
-for i, nombrearchivo in enumerate(nombresarchivos):
-    print "leyendo malla"
-    mc = Mc.leer_de_archivo(archivo=nombrearchivo)
-    print "pregraficando"
-    fig = plt.figure(figsize=(8,8))
-    ax1 = fig.add_subplot(111)
-    lrs, dlr, conteo, frecs, pdf = mc.get_histograma_lamr(lamr_min=1., lamr_max=1.8, nbins=10, binwidth=None, opcion="fibras")
-    for x,y in zip(lrs,frecs):
-        print ("{:20.8f}"*2).format(x,y)
-    print np.sum(conteo), len(mc.fibs.con)
-    frecs[-1] = 0. # para que quede mas lindo el grafico
-    fig, ax1 = graficar_histograma(lrs, frecs, figax=(fig,ax1))
-    ax1.set_xlabel(r"Reclutamiento ($\lambda_r$)")
-    ax1.set_ylabel("Fraccion de fibras")
-    # ax1.set_xticks([])
-    # ax1.set_yticks([])
-    fig.tight_layout()
-    nombrefigura = nombresfigs[i]
-    # plt.show()
-    # fig.savefig(nombrefigura, bbox="tight")
 
 plt.show()
+
+
+
+
+
+
+
+# cwd = "/home/dancab/Documents/academia/doctorado/articulos/multiscale_nanofibers_randomRVE_2/Analisis_geometria/04_tortuosidad_comparacion/"
+# nombresarchivos = ["malla_pa_comparar.txt"]
+# nombresarchivos = [cwd + nombrearchivo for nombrearchivo in nombresarchivos]
+# # nombresfigs = [cwd + "analisis_alineacion_" + item + "_malla.pdf" for item in ("uniforme", "moderada", "alta")]
+# nombresfigs = ["malla_pa_comparar_histogram.pdf"]
+# nombresfigs = [cwd + nombrefig for nombrefig in nombresfigs]
+
+# for i, nombrearchivo in enumerate(nombresarchivos):
+#     print "leyendo malla"
+#     mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+#     print "pregraficando"
+#     lrs, dlr, conteo, frecs, pdf = mc.get_histograma_lamr(lamr_min=1., lamr_max=1.8, nbins=10, binwidth=None, opcion="fibras")
+#     for x,y in zip(lrs,frecs):
+#         print ("{:20.8f}"*2).format(x,y)
+#     print np.sum(conteo), len(mc.fibs.con)
+#     frecs[-1] = 0. # para que quede mas lindo el grafico
+#     fig = plt.figure(figsize=(8,8))
+#     ax1 = fig.add_subplot(111)
+#     fig, ax1 = graficar_histograma(lrs, frecs, figax=(fig,ax1))
+#     ax1.set_xlabel(r"Reclutamiento ($\lambda_r$)")
+#     ax1.set_ylabel("Fraccion de fibras")
+#     # ax1.set_xticks([])
+#     # ax1.set_yticks([])
+#     fig.tight_layout()
+#     nombrefigura = nombresfigs[i]
+#     # plt.show()
+#     # fig.savefig(nombrefigura, bbox="tight")
+
+# plt.show()
 
 # cwd = "/home/dancab/Documents/academia/doctorado/articulos/multiscale_nanofibers_randomRVE_2/Analisis_geometria/09_enrulamiento_mallas_y_pdfs/"
 # nombresfigs = [cwd + "analisis_reclutamiento_devangmax_" + item + "_distribucion_i.pdf" for item in ("5", "10", "20")]
