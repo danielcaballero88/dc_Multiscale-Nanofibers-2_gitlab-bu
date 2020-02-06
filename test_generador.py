@@ -16,12 +16,12 @@ fundisor = None
 Dm = 1.0
 nfibs = 0.1
 
-ncapss = [1]
-Ls = [50.]
-devangs_deg = [10.]
+ncapss = [2]
+Ls = [200.]
+devangs_deg = [20.]
 dls_rel = [1.]
 
-nmallas = 10
+nmallas = 1
 
 cwd = "mallas/"
 
@@ -45,7 +45,7 @@ for ncaps in ncapss:
                                     "_ncaps_" + "{:07d}".format(ncaps) + \
                                     "_nm_" + "{:07d}".format(nm) + \
                                     ".txt"
-                    # nombrearchivo = cwd + "alta_" + "_nm_" + "{:07d}".format(nm) + ".txt"
+                    nombrearchivo = cwd + "000_malla_prueba.txt"
                     mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start
 

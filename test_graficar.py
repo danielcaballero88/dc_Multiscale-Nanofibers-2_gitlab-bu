@@ -4,41 +4,95 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-# cwd = "mallas/"
-# nombresarchivos = ["volfrac_0.1_i.txt", "volfrac_0.3_i.txt"]
+SMALL_SIZE = 8
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 18
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
+
+
+cwd = "mallas/"
+# nombresarchivos = ["000_malla_prueba.txt", "000_malla_prueba_i.txt"]
 # nombresarchivos = [cwd + nombrearchivo for nombrearchivo in nombresarchivos]
 # # nombresfigs = [cwd + "analisis_alineacion_" + item + "_malla.pdf" for item in ("uniforme", "moderada", "alta")]
-# nombresfigs = ["volfrac_0.1_i.pdf", "volfrac_0.3_i.pdf"]
-
-# SMALL_SIZE = 8
-# MEDIUM_SIZE = 16
-# BIGGER_SIZE = 18
-# plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-# plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-# plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-# plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
-# plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
-# plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
-# plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+# # nombresfigs = ["volfrac_0.1_i.pdf", "volfrac_0.3_i.pdf"]
 
 # for i, nombrearchivo in enumerate(nombresarchivos):
 #     print "leyendo malla"
 #     mc = Mc.leer_de_archivo(archivo=nombrearchivo)
 #     print "pregraficando"
 #     fig = plt.figure(figsize=(8,8))
-#     ax1 = fig.add_subplot(111)
-#     mc.pre_graficar_bordes(fig, ax1)
-#     mc.pre_graficar_fibras(fig, ax1, ncapas=None, byn=True, color_por="capa", colores_cm=[(1,0,0), (0,0,1), (1,0,0)], barracolor=False)
-#     mc.pre_graficar_nodos_interseccion(fig, ax1)
-#     ax1.set_xticks([])
-#     ax1.set_yticks([])
+#     ax = fig.add_subplot(111)
+#     mc.pre_graficar_bordes(fig, ax)
+#     # mc.pre_graficar_fibras(fig, ax, ncapas=None, byn=True, color_por="capa", colores_cm=[(1,0,0), (0,0,1), (1,0,0)], barracolor=False)
+#     colores_cm = [(1,0,0), (0,1,0), (0,0,1), (0,0,0), (0.6, 0.2, 0.2), (0.2, 0.6, 0.2), (0.2, 0.2, 0.4), (0.4, 0.4, 0.4)]*10
+#     mc.pre_graficar_interfibras(fig, ax, byn=False, color_por="interfibra", colormap="Dark2", barracolor=False, colores_cm=colores_cm , ncolores_cm=len(colores_cm))
+#     mc.pre_graficar_nodos_interseccion(fig, ax)
+#     ax.set_xticks([])
+#     ax.set_yticks([])
 #     # if i==0:
 #     #     fig.tight_layout()
-#     nombrefigura = nombresfigs[i]
+#     # nombrefigura = nombresfigs[i]
 #     # plt.show()
 #     # fig.savefig(nombrefigura, bbox="tight")
 
-# plt.show()
+
+nombrearchivo = cwd + "000_malla_prueba_i.txt"
+print "leyendo mallita"
+mc = Mc.leer_de_archivo(nombrearchivo)
+print "pregraficando"
+fig = plt.figure()
+# ax = fig.add_subplot(121)
+# mc.pre_graficar_bordes(fig, ax)
+# mc.pre_graficar_fibras(fig, ax, byn=True, color_por="nada", barracolor=False)
+# mc.pre_graficar_nodos_interseccion(fig, ax)
+ax = fig.add_subplot(111)
+mc.pre_graficar_bordes(fig, ax)
+mc.pre_graficar_interfibras(fig, ax, byn=False, color_por="lamr", barracolor=True)
+mc.pre_graficar_nodos_interseccion(fig, ax)
+
+
+
+nombrearchivo = cwd + "000_malla_prueba_i_s.txt"
+print "leyendo mallita"
+ms = Ms.leer_desde_archivo(nombrearchivo)
+print "pregraficando"
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ms.pre_graficar_bordes(fig, ax)
+ms.pre_graficar(fig, ax, lam_min=None, lam_max=None, maxnfibs=2000, color_por="lamr", barracolor=True)
+
+
+# nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
+# print "leyendo mallita"
+# ms = Ms.leer_desde_archivo(nombrearchivo)
+# print "pregraficando"
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# ms.pre_graficar_bordes(fig, ax)
+# Fmacro = np.array([ [1.2, 0.0], [0.0, 1.0] ])
+# ms.pre_graficar(fig, ax, Fmacro=Fmacro)
+
+for i in (1,6):
+    nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
+    print "leyendo mallita"
+    ms = Ms.leer_desde_archivo(nombrearchivo)
+    print "pregraficando"
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ms.pre_graficar_bordes(fig, ax)
+    Fmacro = np.array([ [1. + .02*float(i-1), 0.0], [0.0, 1.0] ])
+    # Fmacro = None
+    ms.pre_graficar(fig, ax, Fmacro=Fmacro, lam_min=None, lam_max=None, maxnfibs=2000, color_por="reclutamiento", barracolor=True)
+
+plt.show()
 
 
 
@@ -46,11 +100,11 @@ import matplotlib.pyplot as plt
 Dm = 1.0
 nfibs = 0.3
 
-ncapss = [1]
+ncapss = [1, 5]
 Ls = [50.]
-devangs_deg = [10.]
+devangs_deg = [0.]
 dls_rel = [1.]
-nmallas = 10
+nmallas = 3
 
 cwd = "mallas/"
 nombresfigs = [cwd + "analisis_reclutamiento_devangmax_" + item + "_malla.pdf" for item in ("5", "10", "20")]
@@ -104,11 +158,11 @@ for ncaps in ncapss:
                     ax2.set_xticks([])
                     ax2.set_yticks([])
                     #
-                    fig1.savefig(nombrearchivo[:-6] + ".pdf")
-                    fig2.savefig(nombrearchivo[:-4] + ".pdf")
+                    # fig1.savefig(nombrearchivo[:-6] + ".pdf")
+                    # fig2.savefig(nombrearchivo[:-4] + ".pdf")
 print "tiempo pregraf: ", time.time() - start
 
-# plt.show()
+plt.show()
 
 
 # # ploteo la malla original

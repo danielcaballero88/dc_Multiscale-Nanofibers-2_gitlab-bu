@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import cm, pyplot as plt
+import matplotlib.colors as colors
 from Aux import find_string_in_file, calcular_longitud_de_segmento
 
 class Nodos(object):
@@ -373,7 +374,7 @@ class Mallita(object):
         plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":", c="gray")
         plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":", c="gray")
 
-    def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None, plotnodos=False, maxnfibs=500):
+    def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None, plotnodos=False, maxnfibs=500, colorbar=False):
         mi_cm = plt.cm.jet
         lamsr = self.fibras.lamsr
         if lamr_min is None:
@@ -398,33 +399,86 @@ class Mallita(object):
         if plotnodos:
             xnods = self.nodos.r0[:,0]
             ynods = self.nodos.r0[:,1]
-            ax.plot(xnods, ynods, linewidth=0, marker=".", mec="k", mfc="w", markersize=8)
-        sm._A = []
-        fig.colorbar(sm)
+            ax.plot(xnods, ynods, linewidth=0, marker="o", mec="k", mfc="w", markersize=4)
+        if colorbar:
+            sm._A = []
+            fig.colorbar(sm)
 
-    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True, Fmacro=None, maxnfibs=500):
+
+    @staticmethod
+    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = colors.LinearSegmentedColormap.from_list(
+            'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+            cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
+
+
+    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True, Fmacro=None, maxnfibs=500, byn=False, color_por="nada", barracolor=False, colormap="jet", colores_cm=None, ncolores_cm=20):
         print "pregraficando mallita"
-        mi_cm = plt.cm.rainbow
         drs, longs, lams = self.fibras.calcular_drs_letes_lams(self.nodos.r)
         lamsr = self.fibras.lamsr
-        if lam_min is None:
-            lam_min = np.min(lams)
-        if lam_max is None:
-            lam_max = np.max(lams)
-        sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        if byn:
+            mi_cm = plt.cm.gray_r
+            # lo trunco para que no incluya el cero (blanco puro que no hace contraste con el fondo)
+            mi_cm = self.truncate_colormap(mi_cm, 0.4, 1.0)
+        else:
+            if colores_cm is not None:
+                mi_cm = colors.LinearSegmentedColormap.from_list("mi_cm", colores_cm, N=ncolores_cm)
+            elif colormap == "jet":
+                mi_cm = plt.cm.jet
+            elif colormap == "rainbow":
+                mi_cm = plt.cm.rainbow
+            elif colormap == "prism":
+                mi_cm = plt.cm.prism
+            elif colormap == "Dark2":
+                mi_cm = plt.cm.Dark2
+        if color_por == "lamr":
+            if lam_min is None:
+                lam_min = np.min(lamsr)
+            if lam_max is None:
+                lam_max = np.max(lamsr)
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        elif color_por == "lam":
+            if lam_min is None:
+                lam_min = np.min(lams)
+            if lam_max is None:
+                lam_max = np.max(lams)
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        if color_por == "lam_ef":
+            lams_ef = lams[:,0] / lamsr
+            if lam_min is None:
+                lam_min = np.min(lams_ef)
+            if lam_max is None:
+                lam_max = np.max(lams_ef)
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        elif color_por == "fibra":
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=0, vmax=self.fibras.n-1))
+        elif color_por == "reclutamiento":
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=0, vmax=self.fibras.n-1)) # al pedo
+        elif color_por == "nada":
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=0, vmax=self.fibras.n-1)) # al pedo
+
         if Fmacro is None:
             # si se da Fmacro r0 se modifica para que sean las coordenadas de deformacion afin
             # de lo contrario quedan las iniciales
             r0 = self.nodos.r0
         else:
             r0 = np.matmul(self.nodos.r0, np.transpose(Fmacro))
-        print "num fibras: ", self.fibras.n
         nfibs = self.fibras.n
         if maxnfibs < nfibs:
             nfibs = maxnfibs
+        pctp = np.arange(0., 101., 10.).tolist()
+        pcpd = np.zeros(len(pctp), dtype=bool).tolist()
         for f in range(nfibs):
+            # imprimo el porcentaje de completado
+            pc = round(float(f)/nfibs * 100.,0)
+            if pc in pctp:
+                ipc = pctp.index(pc)
+                if not pcpd[ipc]:
+                    print "{:4.0f}% ".format(pc),
+                    pcpd[ipc] = True
+            # ---
             n0,n1 = self.fibras.con[f]
-            print f,
             if Fmacro is not None:
                 # linea inicial (afin si se da Fmacro)
                 x0,y0 = r0[n0]
@@ -434,7 +488,21 @@ class Mallita(object):
             # linea final
             x0,y0 = self.nodos.r[n0]
             x1,y1 = self.nodos.r[n1]
-            c = sm.to_rgba(lams[f,0]/lamsr[f])
+            if color_por == "lamr":
+                c = sm.to_rgba(lamsr[f])
+            elif color_por == "lam":
+                c = sm.to_rgba(lams[f,0])
+            elif color_por == "lam_ef":
+                c = sm.to_rgba(lams[f,0]/lamsr[f])
+            elif color_por == "fibra":
+                c = sm.to_rgba(f)
+            elif color_por == "reclutamiento":
+                if lams[f,0]/lamsr[f] > 1.:
+                    c = "red"
+                else:
+                    c = "blue"
+            elif color_por == "nada":
+                c = "k"
             ax.plot([x0,x1], [y0,y1], ls="-", c=c)
         print
         sm._A = []
