@@ -45,7 +45,7 @@ cwd = "mallas/"
 
 
 nombrearchivo = cwd + "000_malla_prueba_i.txt"
-print "leyendo mallita"
+print "leyendo malla"
 mc = Mc.leer_de_archivo(nombrearchivo)
 print "pregraficando"
 fig = plt.figure()
@@ -67,30 +67,33 @@ print "pregraficando"
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ms.pre_graficar_bordes(fig, ax)
-ms.pre_graficar(fig, ax, lam_min=None, lam_max=None, maxnfibs=2000, color_por="lamr", barracolor=True)
+colores_cm = ["blue", "red"]
+ms.pre_graficar(fig, ax, lam_min=1., lam_max=1.5, maxnfibs=2000, color_por="lamr", barracolor=True, colores_cm=colores_cm)
 
 
-# nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
-# print "leyendo mallita"
-# ms = Ms.leer_desde_archivo(nombrearchivo)
-# print "pregraficando"
-# fig = plt.figure()
-# ax = fig.add_subplot(111)
-# ms.pre_graficar_bordes(fig, ax)
-# Fmacro = np.array([ [1.2, 0.0], [0.0, 1.0] ])
-# ms.pre_graficar(fig, ax, Fmacro=Fmacro)
+nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
+print "leyendo mallita"
+ms = Ms.leer_desde_archivo(nombrearchivo)
+print "pregraficando"
+fig = plt.figure()
+ax = fig.add_subplot(111)
+Fmacro = np.array([ [1.2, 0.0], [0.0, 0.9] ])
+ms.pre_graficar_bordes(fig, ax, Fmacro=Fmacro)
+colores_cm = ["blue", "red"]
+ms.pre_graficar(fig, ax, Fmacro=Fmacro, color_por="lam", barracolor=True, colores_cm=colores_cm, maxnfibs=2000)
 
-for i in (1,6):
-    nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
-    print "leyendo mallita"
-    ms = Ms.leer_desde_archivo(nombrearchivo)
-    print "pregraficando"
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ms.pre_graficar_bordes(fig, ax)
-    Fmacro = np.array([ [1. + .02*float(i-1), 0.0], [0.0, 1.0] ])
-    # Fmacro = None
-    ms.pre_graficar(fig, ax, Fmacro=Fmacro, lam_min=None, lam_max=None, maxnfibs=2000, color_por="reclutamiento", barracolor=True)
+# for i in [6]:
+#     nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
+#     print "leyendo mallita"
+#     ms = Ms.leer_desde_archivo(nombrearchivo)
+#     print "pregraficando"
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111)
+#     Fmacro = np.array([ [1. + .02*float(i-1), 0.0], [0.0, 1.0 - .02*float(i-1)] ])
+#     ms.pre_graficar_bordes(fig, ax, Fmacro=Fmacro)
+#     # Fmacro = None
+#     colores_cm = ["blue", "red"]
+#     ms.pre_graficar(fig, ax, Fmacro=Fmacro, lam_min=0.9, lam_max=None, maxnfibs=2000, color_por="lam_ef", barracolor=True, colormap="rainbow", colores_cm=colores_cm)
 
 plt.show()
 

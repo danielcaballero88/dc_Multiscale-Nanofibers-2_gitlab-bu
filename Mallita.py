@@ -187,6 +187,7 @@ class Mallita(object):
         ierr = find_string_in_file(fid, target, True)
         L = float( fid.next() )
         Dm = float( fid.next() )
+        Nc = int( fid.next() )
         nparam = int( fid.next() )
         svals = fid.next().split()
         param_in = [float(val) for val in svals]
@@ -358,21 +359,24 @@ class Mallita(object):
         # fin
         return matG, vecG
 
-    def pre_graficar_bordes(self, fig, ax, byn=False):
-        # seteo
+    def pre_graficar_bordes(self, fig, ax, byn=False, Fmacro=np.array([ [1., 0.], [0., 1.] ])):
+        # deformacion afin del borde
+        r0 = np.array( [ [0.,0.], [1.,0.], [1.,1.], [0.,1.], [0.,0.] ] ) * self.L
+        r1 = np.matmul(r0, np.transpose(Fmacro))
+        # seteo limites
+        lim_left = np.min(r1[:,0])
+        lim_right = np.max(r1[:,0])
+        lim_bottom = np.min(r1[:,1])
+        lim_top = np.max(r1[:,1])
         margen = 0.1*self.L
-        ax.set_xlim(left=0-margen, right=self.L+margen)
-        ax.set_ylim(bottom=0-margen, top=self.L+margen)
+        ax.set_xlim(left=lim_left-margen, right=lim_right+margen)
+        ax.set_ylim(bottom=lim_bottom-margen, top=lim_top+margen)
         # dibujo los bordes del rve
-        fron = []
-        fron.append( [[0,self.L], [0,0]] )
-        fron.append( [[0,0], [self.L,0]] )
-        fron.append( [[0,self.L], [self.L,self.L]] )
-        fron.append( [[self.L,self.L], [self.L,0]] )
-        plt_fron0 = ax.plot(fron[0][0], fron[0][1], linestyle=":", c="gray")
-        plt_fron1 = ax.plot(fron[1][0], fron[1][1], linestyle=":", c="gray")
-        plt_fron2 = ax.plot(fron[2][0], fron[2][1], linestyle=":", c="gray")
-        plt_fron3 = ax.plot(fron[3][0], fron[3][1], linestyle=":", c="gray")
+        plt_fron = ax.plot(r1[:,0], r1[:,1], linestyle=":", c="gray")
+        # plt_fron0 = ax.plot(r1[0], r1[1], linestyle=":", c="gray")
+        # plt_fron1 = ax.plot(r1[1], r1[2], linestyle=":", c="gray")
+        # plt_fron2 = ax.plot(r1[2], r1[3], linestyle=":", c="gray")
+        # plt_fron3 = ax.plot(r1[3], r1[0], linestyle=":", c="gray")
 
     def pre_graficar_0(self, fig, ax, lamr_min=None, lamr_max=None, plotnodos=False, maxnfibs=500, colorbar=False):
         mi_cm = plt.cm.jet
@@ -413,7 +417,7 @@ class Mallita(object):
         return new_cmap
 
 
-    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True, Fmacro=None, maxnfibs=500, byn=False, color_por="nada", barracolor=False, colormap="jet", colores_cm=None, ncolores_cm=20):
+    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None, initial=True, Fmacro=None, maxnfibs=500, byn=False, color_por="nada", barracolor=False, colormap="jet", colores_cm=None, ncolores_cm=100):
         print "pregraficando mallita"
         drs, longs, lams = self.fibras.calcular_drs_letes_lams(self.nodos.r)
         lamsr = self.fibras.lamsr
@@ -483,8 +487,8 @@ class Mallita(object):
                 # linea inicial (afin si se da Fmacro)
                 x0,y0 = r0[n0]
                 x1,y1 = r0[n1]
-                c = "gray"
-                ax.plot([x0,x1], [y0,y1], ls="--", c=c)
+                c = (0.8,0.8,0.8)
+                ax.plot([x0,x1], [y0,y1], ls="--", c=c, linewidth=1)
             # linea final
             x0,y0 = self.nodos.r[n0]
             x1,y1 = self.nodos.r[n1]

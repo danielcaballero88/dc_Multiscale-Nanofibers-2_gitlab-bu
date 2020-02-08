@@ -63,6 +63,7 @@ Et = 2.9e9 # [Pa]
 Eb = Et*1.e-3
 Kt = Et*A0 # [N]
 
+
 # ==========
 # pruebita
 x0 = 0.

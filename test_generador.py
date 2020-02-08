@@ -16,9 +16,9 @@ fundisor = None
 Dm = 1.0
 nfibs = 0.1
 
-ncapss = [2]
-Ls = [200.]
-devangs_deg = [20.]
+ncapss = [10]
+Ls = [50.]
+devangs_deg = [10.]
 dls_rel = [1.]
 
 nmallas = 1
@@ -34,7 +34,7 @@ for ncaps in ncapss:
                 devang = devang_deg*np.pi/180.
                 for nm in range(1,nmallas+1):
                     print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
-                    mc = Mc(L, Dm)
+                    mc = Mc(L, Dm, nfibs, dl, devang, fundisor=None)
                     for i in range(1,ncaps+1):
                         mc.make_capa2(dl, Dm, devang, nfibs, orient_distr=fundisor)
                     # mc.intersectar_fibras()
@@ -48,6 +48,12 @@ for ncaps in ncapss:
                     nombrearchivo = cwd + "000_malla_prueba.txt"
                     mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start
+
+
+mc2 = Mc.leer_de_archivo(nombrearchivo)
+fig, ax = plt.subplots()
+mc2.pre_graficar_fibras(fig, ax)
+plt.show()
 
 # mc = Mc.leer_de_archivo("Malla.txt")
 # start = time.time()
