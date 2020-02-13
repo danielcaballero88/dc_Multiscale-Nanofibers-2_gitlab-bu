@@ -16,9 +16,9 @@ fundisor = None
 Dm = 1.0
 nfibs = 0.1
 
-ncapss = [10]
-Ls = [50.]
-devangs_deg = [10.]
+ncapss = [2]
+Ls = [100.]
+devangs_deg = [2.]
 dls_rel = [1.]
 
 nmallas = 1

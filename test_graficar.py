@@ -10,8 +10,8 @@ BIGGER_SIZE = 18
 plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
 plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
@@ -44,43 +44,71 @@ cwd = "mallas/"
 #     # fig.savefig(nombrefigura, bbox="tight")
 
 
-nombrearchivo = cwd + "000_malla_prueba_i.txt"
-print "leyendo malla"
-mc = Mc.leer_de_archivo(nombrearchivo)
-print "pregraficando"
-fig = plt.figure()
-# ax = fig.add_subplot(121)
+# nombrearchivo = cwd + "000_malla_prueba_i.txt"
+# print "leyendo malla"
+# mc = Mc.leer_de_archivo(nombrearchivo)
+# print "pregraficando"
+# fig = plt.figure()
+# # ax = fig.add_subplot(121)
+# # mc.pre_graficar_bordes(fig, ax)
+# # mc.pre_graficar_fibras(fig, ax, byn=True, color_por="nada", barracolor=False)
+# # mc.pre_graficar_nodos_interseccion(fig, ax)
+# ax = fig.add_subplot(111)
 # mc.pre_graficar_bordes(fig, ax)
-# mc.pre_graficar_fibras(fig, ax, byn=True, color_por="nada", barracolor=False)
+# mc.pre_graficar_interfibras(fig, ax, byn=False, color_por="lamr", barracolor=True)
 # mc.pre_graficar_nodos_interseccion(fig, ax)
-ax = fig.add_subplot(111)
-mc.pre_graficar_bordes(fig, ax)
-mc.pre_graficar_interfibras(fig, ax, byn=False, color_por="lamr", barracolor=True)
-mc.pre_graficar_nodos_interseccion(fig, ax)
 
 
 
-nombrearchivo = cwd + "000_malla_prueba_i_s.txt"
-print "leyendo mallita"
-ms = Ms.leer_desde_archivo(nombrearchivo)
-print "pregraficando"
+# nombrearchivo = cwd + "000_malla_prueba_i_s.txt"
+# print "leyendo mallita"
+# ms = Ms.leer_desde_archivo(nombrearchivo)
+# print "pregraficando"
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# ms.pre_graficar_bordes(fig, ax)
+# colores_cm = ["blue", "red"]
+# ms.pre_graficar(fig, ax, lam_min=1., lam_max=None, maxnfibs=2000, color_por="lamr", barracolor=True, colores_cm=colores_cm)
+
+
+nombrearchivo = cwd + "000_malla_prueba_i_s_e_0000015.txt"
+# nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
+nombrearchivo = cwd + "malla_con_error.txt"
+nombrearchivo = cwd + "000_malla_prueba_i_s_save_0001.txt"
+
+numeros = [1, 11, 21, 31]
+numeros = [1] + range(5,31,5)
+numeros = range(1,31)
+nombresarchivos = [cwd + "000_malla_prueba_i_s_save_{:04d}.txt".format(numero) for numero in numeros]
+
+# nombresarchivos = nombresarchivos + [cwd + "malla_test.txt"]
+
+for nombrearchivo in nombresarchivos:
+    print "leyendo mallita: ", nombrearchivo
+    ms = Ms.leer_desde_archivo(nombrearchivo)
+    print "pregraficando"
+    Fmacro = ms.Fmacro
+    h = 8.*Fmacro[0,0]
+    v = 6.*Fmacro[1,1]
+    fig = plt.figure(figsize=(h,v))
+    ax = fig.add_subplot(111)
+    ms.pre_graficar_bordes(fig, ax)
+    colores_cm = ["blue", "red"]
+    # colores_cm = ["blue", "green", "yellow", "orange", "red"]
+    ms.pre_graficar(fig, ax, color_por="lam_ef", lam_min=1.0, lam_max=1.3,
+                    barracolor=True, colormap="rainbow", colores_cm=colores_cm, maxnfibs=4000,
+                    afin=True, colorafin="k", linewidthafin=1)
+    ax.set_xticks([0., ms.L*Fmacro[0,0]])
+    ax.set_yticks([0., ms.L*Fmacro[1,1]])
+    fig.savefig(nombrearchivo[:-4]+".pdf")
+
+plt.show()
+
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ms.pre_graficar_bordes(fig, ax)
 colores_cm = ["blue", "red"]
-ms.pre_graficar(fig, ax, lam_min=1., lam_max=1.5, maxnfibs=2000, color_por="lamr", barracolor=True, colores_cm=colores_cm)
-
-
-nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
-print "leyendo mallita"
-ms = Ms.leer_desde_archivo(nombrearchivo)
-print "pregraficando"
-fig = plt.figure()
-ax = fig.add_subplot(111)
-Fmacro = np.array([ [1.2, 0.0], [0.0, 0.9] ])
-ms.pre_graficar_bordes(fig, ax, Fmacro=Fmacro)
-colores_cm = ["blue", "red"]
-ms.pre_graficar(fig, ax, Fmacro=Fmacro, color_por="lam", barracolor=True, colores_cm=colores_cm, maxnfibs=2000)
+ms.pre_graficar(fig, ax, color_por="reclutamiento", barracolor=False, colormap="rainbow", colores_cm=colores_cm, maxnfibs=4000, colorafin="gray", linewidthafin=1)
 
 # for i in [6]:
 #     nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
