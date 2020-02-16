@@ -17,9 +17,9 @@ Dm = 1.0
 nfibs = 0.1
 
 ncapss = [2]
-Ls = [100.]
-devangs_deg = [2.]
-dls_rel = [1.]
+Ls = [200.]
+devangs_deg = [10.]
+dls_rel = [5.]
 
 nmallas = 1
 
@@ -45,7 +45,6 @@ for ncaps in ncapss:
                                     "_ncaps_" + "{:07d}".format(ncaps) + \
                                     "_nm_" + "{:07d}".format(nm) + \
                                     ".txt"
-                    nombrearchivo = cwd + "000_malla_prueba.txt"
                     mc.guardar_en_archivo(nombrearchivo)
 print "tiempo generacion: ", time.time() - start
 

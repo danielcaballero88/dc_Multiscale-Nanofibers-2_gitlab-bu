@@ -71,15 +71,10 @@ cwd = "mallas/"
 # ms.pre_graficar(fig, ax, lam_min=1., lam_max=None, maxnfibs=2000, color_por="lamr", barracolor=True, colores_cm=colores_cm)
 
 
-nombrearchivo = cwd + "000_malla_prueba_i_s_e_0000015.txt"
-# nombrearchivo = cwd + "000_malla_prueba_i_s_e.txt"
-nombrearchivo = cwd + "malla_con_error.txt"
-nombrearchivo = cwd + "000_malla_prueba_i_s_save_0001.txt"
-
-numeros = [1, 11, 21, 31]
-numeros = [1] + range(5,31,5)
-numeros = range(1,31)
-nombresarchivos = [cwd + "000_malla_prueba_i_s_save_{:04d}.txt".format(numero) for numero in numeros]
+cwd = "mallas/"
+nombrearchivo = "L_000200.0_dlrel_05.00_devang_02.00_ncaps_0000002_nm_0000001_i_s_save_{:04d}.txt"
+numeros = range(1,32)
+nombresarchivos = [cwd + nombrearchivo.format(numero) for numero in numeros]
 
 # nombresarchivos = nombresarchivos + [cwd + "malla_test.txt"]
 
@@ -88,202 +83,207 @@ for nombrearchivo in nombresarchivos:
     ms = Ms.leer_desde_archivo(nombrearchivo)
     print "pregraficando"
     Fmacro = ms.Fmacro
-    h = 8.*Fmacro[0,0]
+    h = 10.*Fmacro[0,0]
     v = 6.*Fmacro[1,1]
-    fig = plt.figure(figsize=(h,v))
+    fig = plt.figure(figsize=(10,6))
     ax = fig.add_subplot(111)
     ms.pre_graficar_bordes(fig, ax)
     colores_cm = ["blue", "red"]
     # colores_cm = ["blue", "green", "yellow", "orange", "red"]
-    ms.pre_graficar(fig, ax, color_por="lam_ef", lam_min=1.0, lam_max=1.3,
+    ms.pre_graficar(fig, ax, color_por="lam_ef", lam_min=1.0, lam_max=1.041,
                     barracolor=True, colormap="rainbow", colores_cm=colores_cm, maxnfibs=4000,
                     afin=True, colorafin="k", linewidthafin=1)
-    ax.set_xticks([0., ms.L*Fmacro[0,0]])
-    ax.set_yticks([0., ms.L*Fmacro[1,1]])
+    ax.set_xticks([-.5*ms.L*Fmacro[0,0], 0.5*ms.L*Fmacro[0,0]])
+    ax.set_yticks([-.5*ms.L*Fmacro[1,1], 0.5*ms.L*Fmacro[1,1]])
+    ax.set_xlim([-140., 140.])
+    ax.set_ylim([-110., 110.])
+    # plt.show()
+    fig.savefig(nombrearchivo[:-4]+".png")
     fig.savefig(nombrearchivo[:-4]+".pdf")
 
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ms.pre_graficar_bordes(fig, ax)
-colores_cm = ["blue", "red"]
-ms.pre_graficar(fig, ax, color_por="reclutamiento", barracolor=False, colormap="rainbow", colores_cm=colores_cm, maxnfibs=4000, colorafin="gray", linewidthafin=1)
-
-# for i in [6]:
-#     nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
-#     print "leyendo mallita"
-#     ms = Ms.leer_desde_archivo(nombrearchivo)
-#     print "pregraficando"
-#     fig = plt.figure()
-#     ax = fig.add_subplot(111)
-#     Fmacro = np.array([ [1. + .02*float(i-1), 0.0], [0.0, 1.0 - .02*float(i-1)] ])
-#     ms.pre_graficar_bordes(fig, ax, Fmacro=Fmacro)
-#     # Fmacro = None
-#     colores_cm = ["blue", "red"]
-#     ms.pre_graficar(fig, ax, Fmacro=Fmacro, lam_min=0.9, lam_max=None, maxnfibs=2000, color_por="lam_ef", barracolor=True, colormap="rainbow", colores_cm=colores_cm)
-
-plt.show()
-
-
-
-
-Dm = 1.0
-nfibs = 0.3
-
-ncapss = [1, 5]
-Ls = [50.]
-devangs_deg = [0.]
-dls_rel = [1.]
-nmallas = 3
-
-cwd = "mallas/"
-nombresfigs = [cwd + "analisis_reclutamiento_devangmax_" + item + "_malla.pdf" for item in ("5", "10", "20")]
-
-start = time.time()
-for ncaps in ncapss:
-    for L in Ls:
-        for dl_rel in dls_rel:
-            dl = dl_rel * Dm
-            for devang_deg in devangs_deg:
-                devang = devang_deg*np.pi/180.
-                for nm in range(1,nmallas+1):
-                    print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
-                    nombrearchivo = cwd + \
-                                    "L_" + "{:08.1f}".format(L) + \
-                                    "_dlrel_" + "{:05.2f}".format(dl_rel) + \
-                                    "_devang_" + "{:05.2f}".format(devang_deg) + \
-                                    "_ncaps_" + "{:07d}".format(ncaps) + \
-                                    "_nm_" + "{:07d}".format(nm) + \
-                                    "_i.txt"
-                    print nombrearchivo
-                    print "leyendo malla"
-                    mc = Mc.leer_de_archivo(archivo=nombrearchivo)
-                    print "pregraficando"
-                    fig1 = plt.figure(figsize=(8,8))
-                    ax1 = fig1.add_subplot(111)
-                    mc.pre_graficar_bordes(fig1, ax1)
-                    # colores_cm = [(1,0,0), (0,0,1), (1,0,0)]
-                    mc.pre_graficar_fibras(fig1, ax1, ncapas=2, byn=True, color_por="nada", colores_cm=None)
-                    mc.pre_graficar_nodos_frontera(fig1, ax1, markersize=6)
-                    ax1.set_xticks([])
-                    ax1.set_yticks([])
-                    #
-                    fig2 = plt.figure(figsize=(8,8))
-                    ax2 = fig2.add_subplot(111)
-                    nombrearchivo = "mallas/" + \
-                                    "L_" + "{:08.1f}".format(L) + \
-                                    "_dlrel_" + "{:05.2f}".format(dl_rel) + \
-                                    "_devang_" + "{:05.2f}".format(devang_deg) + \
-                                    "_ncaps_" + "{:07d}".format(ncaps) + \
-                                    "_nm_" + "{:07d}".format(nm) + \
-                                    "_i.txt"
-                    # nombrearchivo = "Malla.txt"
-                    mc = Mc.leer_de_archivo(archivo=nombrearchivo)
-                    mc.pre_graficar_bordes(fig2, ax2)
-                    colores_cm = [(1,0,0), (0,1,0), (0,0,1), (0,0,0), (0.6, 0.2, 0.2), (0.2, 0.6, 0.2), (0.2, 0.2, 0.4), (0.4, 0.4, 0.4)]*10
-                    # colores_cm = [(0,0,0), (0.6, 0.2, 0.2), (0.2, 0.2, 0.6), (0.4, 0.4, 0.4)]
-                    mc.pre_graficar_interfibras(fig2, ax2, byn=False, color_por="interfibra", colormap="Dark2", barracolor=False, colores_cm=colores_cm , ncolores_cm=len(colores_cm))
-                    mc.pre_graficar_nodos_interseccion(fig2, ax2, markersize=6)
-                    mc.pre_graficar_nodos_frontera(fig2, ax2, markersize=6)
-                    ax2.set_xticks([])
-                    ax2.set_yticks([])
-                    #
-                    # fig1.savefig(nombrearchivo[:-6] + ".pdf")
-                    # fig2.savefig(nombrearchivo[:-4] + ".pdf")
-print "tiempo pregraf: ", time.time() - start
-
-plt.show()
-
-
-# # ploteo la malla original
-# print "leyendo malla"
-# mc = Mc.leer_de_archivo("Malla.txt")
-# fig1,ax1 = plt.subplots()
-# mc.pre_graficar_bordes(fig1, ax1)
-# mc.pre_graficar_fibras(fig1, ax1, byn=True, color_por="capa")
-# # mc.pre_graficar_nodos_interseccion(fig1,ax1)
-
-# # ploteo la malla original
-# print "leyendo malla"
-# mc = Mc.leer_de_archivo("Malla.txt")
-# fig12,ax12 = plt.subplots()
-# mc.pre_graficar_bordes(fig12, ax12)
-# mc.pre_graficar_fibras(fig12, ax12, byn=False, color_por="lamr")
-# # mc.pre_graficar_nodos_interseccion(fig12,ax12)
-
-# # ploteo la malla intersectada por fortran
-# print "leyendo malla intersectada"
-# mc = Mc.leer_de_archivo("Malla_i.txt")
-# fig2,ax2 = plt.subplots()
-# mc.pre_graficar_bordes(fig2, ax2)
-# mc.pre_graficar_interfibras(fig2, ax2, byn=False, color_por="lamr", barracolor=True)
-# mc.pre_graficar_nodos_interseccion(fig2,ax2)
-
-# # ploteo la malla simplificada por fortran
-# print "leyendo mallita"
-# ms = Ms.leer_desde_archivo("Malla_i_s.txt")
-# fig3,ax3 = plt.subplots()
-# ms.pre_graficar_bordes(fig3, ax3)
-# ms.pre_graficar_0(fig3,ax3, plotnodos=True, maxnfibs=20000)
-# # ms.pre_graficar(fig3,ax3, lam_min=1.0, lam_max=1.2, maxnfibs=20000)
-
-# # ploteo la malla simplificada por fortran
-# print "leyendo mallita"
-# ms = Ms.leer_desde_archivo("Malla_i_s_e.txt")
-# fig4,ax4 = plt.subplots()
-# ms.pre_graficar_bordes(fig4, ax4)
-# ms.pre_graficar(fig4,ax4, maxnfibs=20000)
-
 # plt.show()
 
-# # ploteo afin
-# Fmacro = np.array(
-#     [
-#         [1.2, 0.0],
-#         [0.0, 1.0]
-#     ]
-# )
-# rafin = np.matmul(ms.nodos.r0, np.transpose(Fmacro))
-# ms.nodos.r = rafin
-# fig4, ax4 = plt.subplots()
-# ms.pre_graficar(fig4,ax4,lam_min=1.0, lam_max=1.2, maxnfibs=20000)
+if False:
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ms.pre_graficar_bordes(fig, ax)
+    colores_cm = ["blue", "red"]
+    ms.pre_graficar(fig, ax, color_por="reclutamiento", barracolor=False, colormap="rainbow", colores_cm=colores_cm, maxnfibs=4000, colorafin="gray", linewidthafin=1)
+
+    # for i in [6]:
+    #     nombrearchivo = cwd + "000_malla_prueba_i_s_e_" + "{:07d}".format(i) + ".txt"
+    #     print "leyendo mallita"
+    #     ms = Ms.leer_desde_archivo(nombrearchivo)
+    #     print "pregraficando"
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111)
+    #     Fmacro = np.array([ [1. + .02*float(i-1), 0.0], [0.0, 1.0 - .02*float(i-1)] ])
+    #     ms.pre_graficar_bordes(fig, ax, Fmacro=Fmacro)
+    #     # Fmacro = None
+    #     colores_cm = ["blue", "red"]
+    #     ms.pre_graficar(fig, ax, Fmacro=Fmacro, lam_min=0.9, lam_max=None, maxnfibs=2000, color_por="lam_ef", barracolor=True, colormap="rainbow", colores_cm=colores_cm)
+
+    plt.show()
 
 
 
-# rafin = np.matmul(ms.nodos.r0, np.transpose(Fmacro))
-# for i in range(ms.nodos.n):
-#     dr = ms.nodos.r[i] - rafin[i]
-#     print dr
+
+    Dm = 1.0
+    nfibs = 0.3
+
+    ncapss = [1, 5]
+    Ls = [50.]
+    devangs_deg = [0.]
+    dls_rel = [1.]
+    nmallas = 3
+
+    cwd = "mallas/"
+    nombresfigs = [cwd + "analisis_reclutamiento_devangmax_" + item + "_malla.pdf" for item in ("5", "10", "20")]
+
+    start = time.time()
+    for ncaps in ncapss:
+        for L in Ls:
+            for dl_rel in dls_rel:
+                dl = dl_rel * Dm
+                for devang_deg in devangs_deg:
+                    devang = devang_deg*np.pi/180.
+                    for nm in range(1,nmallas+1):
+                        print "ncaps={:05d}  L = {:08.2f}  devang = {:05.2f}  dl_rel = {:05.2f}  nm = {:07d}".format(ncaps, L, devang_deg, dl_rel, nm)
+                        nombrearchivo = cwd + \
+                                        "L_" + "{:08.1f}".format(L) + \
+                                        "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                        "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                        "_ncaps_" + "{:07d}".format(ncaps) + \
+                                        "_nm_" + "{:07d}".format(nm) + \
+                                        "_i.txt"
+                        print nombrearchivo
+                        print "leyendo malla"
+                        mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+                        print "pregraficando"
+                        fig1 = plt.figure(figsize=(8,8))
+                        ax1 = fig1.add_subplot(111)
+                        mc.pre_graficar_bordes(fig1, ax1)
+                        # colores_cm = [(1,0,0), (0,0,1), (1,0,0)]
+                        mc.pre_graficar_fibras(fig1, ax1, ncapas=2, byn=True, color_por="nada", colores_cm=None)
+                        mc.pre_graficar_nodos_frontera(fig1, ax1, markersize=6)
+                        ax1.set_xticks([])
+                        ax1.set_yticks([])
+                        #
+                        fig2 = plt.figure(figsize=(8,8))
+                        ax2 = fig2.add_subplot(111)
+                        nombrearchivo = "mallas/" + \
+                                        "L_" + "{:08.1f}".format(L) + \
+                                        "_dlrel_" + "{:05.2f}".format(dl_rel) + \
+                                        "_devang_" + "{:05.2f}".format(devang_deg) + \
+                                        "_ncaps_" + "{:07d}".format(ncaps) + \
+                                        "_nm_" + "{:07d}".format(nm) + \
+                                        "_i.txt"
+                        # nombrearchivo = "Malla.txt"
+                        mc = Mc.leer_de_archivo(archivo=nombrearchivo)
+                        mc.pre_graficar_bordes(fig2, ax2)
+                        colores_cm = [(1,0,0), (0,1,0), (0,0,1), (0,0,0), (0.6, 0.2, 0.2), (0.2, 0.6, 0.2), (0.2, 0.2, 0.4), (0.4, 0.4, 0.4)]*10
+                        # colores_cm = [(0,0,0), (0.6, 0.2, 0.2), (0.2, 0.2, 0.6), (0.4, 0.4, 0.4)]
+                        mc.pre_graficar_interfibras(fig2, ax2, byn=False, color_por="interfibra", colormap="Dark2", barracolor=False, colores_cm=colores_cm , ncolores_cm=len(colores_cm))
+                        mc.pre_graficar_nodos_interseccion(fig2, ax2, markersize=6)
+                        mc.pre_graficar_nodos_frontera(fig2, ax2, markersize=6)
+                        ax2.set_xticks([])
+                        ax2.set_yticks([])
+                        #
+                        # fig1.savefig(nombrearchivo[:-6] + ".pdf")
+                        # fig2.savefig(nombrearchivo[:-4] + ".pdf")
+    print "tiempo pregraf: ", time.time() - start
+
+    plt.show()
 
 
-# fig1.savefig("Malla.pdf", bbox_inches='tight')
-# fig12.savefig("Malla2.pdf", bbox_inches='tight')
-# fig2.savefig("Malla_i.pdf", bbox_inches='tight')
-# fig3.savefig("Malla_s.pdf", bbox_inches='tight')
-# fig4.savefig("Malla_sd.pdf", bbox_inches='tight')
-# plt.show()
+    # # ploteo la malla original
+    # print "leyendo malla"
+    # mc = Mc.leer_de_archivo("Malla.txt")
+    # fig1,ax1 = plt.subplots()
+    # mc.pre_graficar_bordes(fig1, ax1)
+    # mc.pre_graficar_fibras(fig1, ax1, byn=True, color_por="capa")
+    # # mc.pre_graficar_nodos_interseccion(fig1,ax1)
 
-# muevo el nodo 1 y calculo A y b
-# r1 = ms.nodos.r.copy()
-# r1[0] = [50., -10.]
-# print r1
-# Ag, bg = ms.calcular_A_b(r1)
+    # # ploteo la malla original
+    # print "leyendo malla"
+    # mc = Mc.leer_de_archivo("Malla.txt")
+    # fig12,ax12 = plt.subplots()
+    # mc.pre_graficar_bordes(fig12, ax12)
+    # mc.pre_graficar_fibras(fig12, ax12, byn=False, color_por="lamr")
+    # # mc.pre_graficar_nodos_interseccion(fig12,ax12)
 
-# # fid = open("Ab.txt", "w")
-# n = ms.nodos.n
-# # m = 2*n
-# # for i in range(m):
-# #     linea = "".join( "{:20.8e}".format(val) for val in Ag[i,:] )
-# #     linea += "{:20.8e}".format(bg[i,0])
-# #     fid.write(linea+"\n")
-# # fid.close()
+    # # ploteo la malla intersectada por fortran
+    # print "leyendo malla intersectada"
+    # mc = Mc.leer_de_archivo("Malla_i.txt")
+    # fig2,ax2 = plt.subplots()
+    # mc.pre_graficar_bordes(fig2, ax2)
+    # mc.pre_graficar_interfibras(fig2, ax2, byn=False, color_por="lamr", barracolor=True)
+    # mc.pre_graficar_nodos_interseccion(fig2,ax2)
 
-# dr = np.linalg.solve(Ag,bg)
-# dr = dr.reshape(-1,2)
+    # # ploteo la malla simplificada por fortran
+    # print "leyendo mallita"
+    # ms = Ms.leer_desde_archivo("Malla_i_s.txt")
+    # fig3,ax3 = plt.subplots()
+    # ms.pre_graficar_bordes(fig3, ax3)
+    # ms.pre_graficar_0(fig3,ax3, plotnodos=True, maxnfibs=20000)
+    # # ms.pre_graficar(fig3,ax3, lam_min=1.0, lam_max=1.2, maxnfibs=20000)
 
-# for i in range(n):
-#     print i, dr[i,:]
+    # # ploteo la malla simplificada por fortran
+    # print "leyendo mallita"
+    # ms = Ms.leer_desde_archivo("Malla_i_s_e.txt")
+    # fig4,ax4 = plt.subplots()
+    # ms.pre_graficar_bordes(fig4, ax4)
+    # ms.pre_graficar(fig4,ax4, maxnfibs=20000)
+
+    # plt.show()
+
+    # # ploteo afin
+    # Fmacro = np.array(
+    #     [
+    #         [1.2, 0.0],
+    #         [0.0, 1.0]
+    #     ]
+    # )
+    # rafin = np.matmul(ms.nodos.r0, np.transpose(Fmacro))
+    # ms.nodos.r = rafin
+    # fig4, ax4 = plt.subplots()
+    # ms.pre_graficar(fig4,ax4,lam_min=1.0, lam_max=1.2, maxnfibs=20000)
+
+
+
+    # rafin = np.matmul(ms.nodos.r0, np.transpose(Fmacro))
+    # for i in range(ms.nodos.n):
+    #     dr = ms.nodos.r[i] - rafin[i]
+    #     print dr
+
+
+    # fig1.savefig("Malla.pdf", bbox_inches='tight')
+    # fig12.savefig("Malla2.pdf", bbox_inches='tight')
+    # fig2.savefig("Malla_i.pdf", bbox_inches='tight')
+    # fig3.savefig("Malla_s.pdf", bbox_inches='tight')
+    # fig4.savefig("Malla_sd.pdf", bbox_inches='tight')
+    # plt.show()
+
+    # muevo el nodo 1 y calculo A y b
+    # r1 = ms.nodos.r.copy()
+    # r1[0] = [50., -10.]
+    # print r1
+    # Ag, bg = ms.calcular_A_b(r1)
+
+    # # fid = open("Ab.txt", "w")
+    # n = ms.nodos.n
+    # # m = 2*n
+    # # for i in range(m):
+    # #     linea = "".join( "{:20.8e}".format(val) for val in Ag[i,:] )
+    # #     linea += "{:20.8e}".format(bg[i,0])
+    # #     fid.write(linea+"\n")
+    # # fid.close()
+
+    # dr = np.linalg.solve(Ag,bg)
+    # dr = dr.reshape(-1,2)
+
+    # for i in range(n):
+    #     print i, dr[i,:]
 
 
 

@@ -215,8 +215,25 @@ class Mallita(object):
         coors0 = list()
         coors = list()
         tipos = list()
+        # -
+        L_2 = 0.5*L
+        if status_deformed:
+            L_2_def_x = 0.5*L*F11
+            L_2_def_y = 0.5*L*F22
+        else:
+            L_2_def_x = L_2
+            L_2_def_y = L_2
+        # -
         for i in range(num_r):
             j, t, x0, y0, x, y = (float(val) for val in fid.next().split())
+            x0 = x0 - L_2
+            y0 = y0 - L_2
+            if status_deformed:
+                x = x - L_2_def_x
+                y = y - L_2_def_y
+            else:
+                x = x0
+                y = y0
             tipos.append(int(t))
             coors0.append([x0,y0])
             coors.append([x,y])
@@ -388,7 +405,8 @@ class Mallita(object):
 
     def pre_graficar_bordes(self, fig, ax, byn=False):
         # deformacion afin del borde
-        r_corners = np.array( [ [0.,0.], [1.,0.], [1.,1.], [0.,1.], [0.,0.] ] ) * self.L
+        # r_corners = np.array( [ [0.,0.], [1.,0.], [1.,1.], [0.,1.], [0.,0.] ] ) * self.L
+        r_corners = np.array( [ [-.5,-.5], [.5,-.5], [.5,.5], [-.5,.5], [-.5,-.5] ] ) * self.L
         if self.status_deformed:
             Fmacro = self.Fmacro
             r_corners = np.matmul(r_corners, np.transpose(Fmacro))

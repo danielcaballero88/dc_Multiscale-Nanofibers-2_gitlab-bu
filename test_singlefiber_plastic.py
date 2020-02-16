@@ -17,12 +17,15 @@ def find_nearest_index(array, value):
     idx = (np.abs(array - value)).argmin()
     return idx
 
-def ten_elas_fibra(lam, Et, Eb, lamr, lamp):
+def ten_elas_fibra(lam, Et, Eb, lamr, lamp, lam_rot=1.5):
     lamrL = lamr*lamp
     if lam<=lamrL:
-        return Eb*(lam/lamp-1.)
+        ten = Eb*(lam/lamp-1.)
+    elif lam <= lam_rot:
+        ten = Eb*(lamrL-1.) + Et*(lam/lamrL-1.)
     else:
-        return Eb*(lamrL-1.) + Et*(lam/lamrL-1.)
+        ten = 0.
+    return ten
 
 ## seno hiperbolico
 #x = np.linspace(0., 1., 100000)
@@ -36,19 +39,20 @@ def ten_elas_fibra(lam, Et, Eb, lamr, lamp):
 D0 = 1. #  [micron]
 A0 = np.pi*D0**2/4.
 doteps0 = 1.0e-8 #  [1/seg]
-s0 = 6. # [MPa]
-nhard = 0.5 # hardening coefficient
-Et = 2.9e3 # [MPa]
+s0 = 4. # [MPa]
+nhard = 1.5 # hardening coefficient
+Et = 1.e3 # [MPa]
 Kt = Et*A0 # [uN]
 Eb = Et * 1.e-3
-lamr = 1.1
+lamr = 1.0
 lamp0 = 1.0
+lamrot = 1.27
 
 # tiempo y tasa de deformacion
 tiempo0 = 0.
-dtiempo = .1
-dotlam = .6/60.
-lamf = 1.4
+dtiempo = .01
+dotlam = .01
+lamf = 1.3
 tiempof = tiempo0 + (lamf-1.)/dotlam
 
 # esquema explicito
@@ -70,9 +74,10 @@ switch2 = 0
 while lam < lamf:
     tiempo += dtiempo
     lam += dotlam*dtiempo
-    print tiempo, lam
     # ten = Et*(lam/lamp - 1.)
-    ten = ten_elas_fibra(lam, Et, Eb, lamr, lamp)
+    ten = ten_elas_fibra(lam, Et, Eb, lamr, lamp, lamrot)
+    lamef = lam/lamp/lamr
+    print "{:10.4f}{:10.4f}{:20.8e}{:10.4f}".format(tiempo, lam, ten, lamef)
     # # modelo de plasticidad sencillo armado por mi al boleo
     # if ten > 50.e6:
     #     dotlamp = (ten - 50.e6)/(lamp**5*1.e6) * .002
@@ -92,7 +97,7 @@ while lam < lamf:
     rec_ten.append(ten)
     rec_dotlamp.append(dotlamp)
     rec_lamp.append(lamp)
-    if switch1==0 and lam>1.2:
+    if switch1==0 and lam>1.15:
         dotlam = -dotlam
         switch1 = 1
     if switch1==1 and switch2==0 and ten < 1.e-2:
@@ -107,6 +112,35 @@ rec_fuerza = rec_ten * A0  # [uN]
 rec_dotlamp = np.array(rec_dotlamp)
 rec_lamp = np.array(rec_lamp)
 rec_ten = rec_ten # [MPa]
+
+rec_lamef = rec_lam / rec_lamp / lamr
+
+
+
+
+
+
+
+SMALL_SIZE = 8
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 18
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+
+fig, ax = plt.subplots()
+ax.plot(rec_lam, rec_ten, c="k", lw=1.5)
+ax.set_xlabel(r"$\lambda$")
+ax.set_ylabel(r"Tension ingenieril")
+fig.tight_layout()
+# ax.set_title("ten vs lam")
+fig.savefig("curva_tension_fibra_plasticidad_2.pdf")
+
 
 
 
@@ -134,13 +168,20 @@ rec_ten = rec_ten # [MPa]
 # ax.plot(rec_ten, rec_lamp)
 # ax.set_title("lamp vs ten")
 
-fig, ax = plt.subplots()
-ax.plot(rec_lam, rec_ten)
-ax.set_title("ten vs lam")
+
 
 # fig, ax = plt.subplots()
 # ax.plot(rec_lam, rec_fuerza)
 # ax.set_title("fuerza vs lam")
 
+# fig, ax = plt.subplots()
+# ax.plot(rec_lamef, rec_ten, linewidth=0, marker=".")
+# ax.set_title("ten vs lamef")
+
+# fig, ax = plt.subplots()
+# ax.plot(rec_lamef, rec_tiempo, linewidth=0, marker=".")
+# ax.set_title("time vs lamef")
+
+print np.max(rec_lamef)
 
 plt.show()
