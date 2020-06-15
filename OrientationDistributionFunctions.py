@@ -30,3 +30,17 @@ class NormalTruncada(object):
 
     # def pdf(self, vec_x):
     #     return stats.truncnorm.rvs(self.lower, self.upper, loc=loc, scale=scale, size=self.n)
+
+class ValoresPreestablecidos(object):
+    def __init__(self, valores):
+        self.n = len(valores)
+        self.vals = valores
+        self.i = 0
+
+    def __call__(self):
+        x = self.vals[self.i]
+        if self.i == self.n-1:
+            self.i = 0
+        else:
+            self.i += 1
+        return x

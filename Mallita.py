@@ -85,104 +85,12 @@ class Mallita(object):
         self.status_deformed = False
         self.Fmacro = None
         self.Tmacro = None
+        self.Ncapas = None
         # self.fibras.calcular_drs0_letes0_fzasr(self.nodos.r0)
         self.__delta = 1.e-4
         self.__delta21 = 1. / (2.*self.__delta)
         self.__deltax = self.__delta * np.array( [1., 0.], dtype=float )
         self.__deltay = self.__delta * np.array( [0., 1.], dtype=float )
-
-    # @classmethod
-    # def desde_malla_completa(cls, mc, param_in):
-    #     """
-    #     toma una malla completa (mc)
-    #     y construye una malla simplifiada
-    #     mc es una instancia de malla completa
-    #     param es un array con los parametros generales que se van a copiar para todas las fibras
-    #      """
-    #     # obtengo lo que necesito de la malla completa
-    #     # recordar que en la malla completa los objetos suelen ser listas (no arrays de numpy)
-    #     L = mc.L
-    #     Dm = mc.Dm
-    #     coors = mc.nods.r
-    #     tipos = mc.nods.tipos
-    #     segs = mc.segs.con
-    #     fibs = mc.fibs.con
-    #     # los voy a mapear a otras listas propias de la malla simplificada
-    #     ms_nods_r = list() # coordenadas de la malla simplificada
-    #     ms_nods_t = list() # tipos de los nodos de la malla simplificada
-    #     ms_nods_n = list() # indices originales de los nodos
-    #     ms_sfbs_c = list() # conectividad de subfibras de la malla simplificada
-    #     ms_sfbs_ds = list()
-    #     ms_sfbs_lc = list() # largo de las subfibras siguiendo el contorno de los segmentos
-    #     ms_sfbs_le = list() # largo de las subfibras de extremo a extremo
-    #     # recorro cada fibra:
-    #     for f in range(len(fibs)): # f es el indice de cada fibra en la malla completa
-    #         # tengo una nueva subfibra
-    #         new_sfb = [0, 0] # por ahora esta vacia
-    #         # agrego el primer nodo
-    #         s = fibs[f][0] # segmento 0 de la fibra f
-    #         n0 = segs[s][0] # nodo 0 del segmento s
-    #         ms_nods_r.append( coors[n0] )
-    #         ms_nods_t.append( tipos[n0] ) # deberia ser un 1
-    #         ms_nods_n.append( n0 )
-    #         # lo agrego a la nueva subfibra como su primer nodo
-    #         new_sfb[0] = ms_nods_n.index(n0)   # es el nodo recien agregado a la lista de nodos
-    #         assert ms_nods_t[-1] == 1
-    #         # recorro el resto de los nodos de la fibra para agregar los nodos intereccion
-    #         loco = 0. # aca voy sumando el largo de los segmentos que componen la subfibra (loco = longitud de contorno)
-    #         for js in range(len(fibs[f])): # js es el indice de cada segmento en la fibra f (numeracion local a la fibra)
-    #             # voy viendo los nodos finales de cada segmento
-    #             s = fibs[f][js] # s es el indice de cada segmento en la malla original (numeracion global)
-    #             n0 = segs[s][0] # primer nodo del segmento
-    #             n1 = segs[s][1] # nodo final del segmento
-    #             r0 = coors[n0]
-    #             r1 = coors[n1]
-    #             dx = r1[0] - r0[0]
-    #             dy = r1[1] - r0[1]
-    #             loco += np.sqrt( dx*dx + dy*dy ) # largo del segmento (lo sumo al largo de la subfibra)
-    #             if tipos[n1] in (1,2): # nodo interseccion (2) o nodo final (1)
-    #                 # tengo que fijarme si el nodo no esta ya presente
-    #                 # (ya que los nodos interseccion pertenecen a dos fibras)
-    #                 if not n1 in ms_nods_n:
-    #                     # el nodo no esta listado,
-    #                     # tengo que agregarlo a la lista de nodos
-    #                     ms_nods_r.append( coors[n1] )
-    #                     ms_nods_t.append( tipos[n1] )
-    #                     ms_nods_n.append( n1 )
-    #                 # me fijo en la nueva numeracion cual es el indice del ultimo nodo de la subfibra
-    #                 new_sfb[1] = ms_nods_n.index(n1)
-    #                 # y agrega la conectividad de la subfibra a la lista
-    #                 ms_sfbs_c.append( new_sfb )
-    #                 ms_sfbs_ds.append( mc.fibs.ds[f] )
-    #                 # ademas agrego la longitud de contorno y la longitud de extremos a extremo
-    #                 ms_sfbs_lc.append( loco )
-    #                 n_e1 = new_sfb[1] # nodo extremo final de la subfibra
-    #                 n_e0 = new_sfb[0] # nodo extremo inicial de la subfibra
-    #                 dx = ms_nods_r[n_e1][0] - ms_nods_r[n_e0][0]
-    #                 dy = ms_nods_r[n_e1][1] - ms_nods_r[n_e0][1]
-    #                 lete = np.sqrt(dx*dx + dy*dy)
-    #                 ms_sfbs_le.append( lete )
-    #                 # si no llegue a un nodo frontera, debo empezar una nueva subfibra a partir del nodo interseccion
-    #                 if tipos[n1] == 2:
-    #                     loco = 0.
-    #                     new_sfb = [0, 0]
-    #                     new_sfb[0] = ms_nods_n.index(n1) # el primer nodo de la siguiente subfibra sera el ultimo nodo de la anterior
-    #     # ---
-    #     # ahora coloco las variables en mi objeto malla simplificada
-    #     # nodos con coordenadas y tipos
-    #     n_nods = len(ms_nods_r)
-    #     nodos = Nodos(n_nods, ms_nods_r, ms_nods_t)
-    #     # subfibras
-    #     n_sfbs = len(ms_sfbs_c)
-    #     locos = np.array( ms_sfbs_lc, dtype=float )
-    #     letes = np.array( ms_sfbs_le, dtype=float )
-    #     lams_r = locos / letes
-    #     param = np.zeros( (n_sfbs,len(param_in)), dtype=float )
-    #     param[:,0:] = param_in
-    #     fibras = Fibras(n_sfbs, ms_sfbs_c, ms_sfbs_ds, letes, lams_r, param)
-    #     # mallita
-    #     m = Mallita(L, Dm, nodos, fibras)
-    #     return m
 
     @classmethod
     def leer_desde_archivo(self, nomarchivo):
@@ -278,6 +186,7 @@ class Mallita(object):
         fibras = Fibras(num_f, fibs, ds, letes0, lamsr, lamps, brokens, param)
         # mallita
         m = Mallita(L, Dm, nodos, fibras)
+        m.Ncapas = Nc
         if status_deformed:
             m.status_deformed = status_deformed
             m.Fmacro = Fmacro
@@ -291,6 +200,7 @@ class Mallita(object):
         fmt = "{:20.8e}"
         dString += fmt.format(self.L) + "\n"
         dString += fmt.format(self.Dm) + "\n"
+        dString += "{:3d}".format(self.Ncapas) + "\n"
         nparam = np.shape(self.fibras.param)[1]
         dString += "{:3d}".format(nparam) + "\n"
         dString += "".join( fmt.format(val) for val in self.fibras.param[0] ) + "\n"
@@ -405,7 +315,6 @@ class Mallita(object):
 
     def pre_graficar_bordes(self, fig, ax, byn=False):
         # deformacion afin del borde
-        # r_corners = np.array( [ [0.,0.], [1.,0.], [1.,1.], [0.,1.], [0.,0.] ] ) * self.L
         r_corners = np.array( [ [-.5,-.5], [.5,-.5], [.5,.5], [-.5,.5], [-.5,-.5] ] ) * self.L
         if self.status_deformed:
             Fmacro = self.Fmacro
@@ -439,10 +348,6 @@ class Mallita(object):
             x1,y1 = self.nodos.r0[n1]
             c = sm.to_rgba(lamsr[f])
             ax.plot([x0,x1], [y0,y1], ls="-", c=c)
-            # # linea final
-            # x0,y0 = self.nodos.r[n0]
-            # x1,y1 = self.nodos.r[n1]
-            # ax.plot([x0,x1], [y0,y1], ls="-", c="k")
         if plotnodos:
             xnods = self.nodos.r0[:,0]
             ynods = self.nodos.r0[:,1]
@@ -459,14 +364,27 @@ class Mallita(object):
             cmap(np.linspace(minval, maxval, n)))
         return new_cmap
 
+    @staticmethod
+    def calcular_tensiones_fibras(lams, Et, Eb, lamrs, lamps):
+        nfibs = len(lams)
+        tens = np.zeros(nfibs, dtype=float)
+        for f in range(nfibs):
+            lamrL = lamrs[f]*lamps[f]
+            if lams[f]<=lamrL:
+                tens[f] = Eb*(lams[f]/lamps[f]-1.)
+            else:
+                tens[f] = Eb*(lamrL-1.) + Et*(lams[f]/lamrL-1.)
+        return tens
 
-    def pre_graficar(self, fig, ax, lam_min=None, lam_max=None,
+    def pre_graficar(self, fig, ax, linewidth=2,
+                    lam_min=None, lam_max=None,
                     maxnfibs=5000, byn=False, color_por="nada", barracolor=False, colormap="jet", colores_cm=None, ncolores_cm=100,
                     afin=True, colorafin="gray", linewidthafin=2):
         print "pregraficando mallita"
         drs, longs, lams = self.fibras.calcular_drs_letes_lams(self.nodos.r)
         lamsr = self.fibras.lamsr
         lamps = self.fibras.lamps
+        lams_ef = lams[:,0] / lamsr / lamps
         if self.status_deformed:
             Fmacro = self.Fmacro
         if byn:
@@ -497,11 +415,17 @@ class Mallita(object):
                 lam_max = np.max(lams)
             sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
         elif color_por == "lam_ef":
-            lams_ef = lams[:,0] / lamsr / lamps
             if lam_min is None:
                 lam_min = np.min(lams_ef)
             if lam_max is None:
                 lam_max = np.max(lams_ef)
+            sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
+        elif color_por == "tension":
+            tensiones = self.calcular_tensiones_fibras(lams, 2.9e3, 2.0, lamsr, lamps)
+            if lam_min is None:
+                lam_min = np.min(tensiones)
+            if lam_max is None:
+                lam_max = np.max(tensiones)
             sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=lam_min, vmax=lam_max))
         elif color_por == "fibra":
             sm = plt.cm.ScalarMappable(cmap=mi_cm, norm=plt.Normalize(vmin=0, vmax=self.fibras.n-1))
@@ -546,6 +470,8 @@ class Mallita(object):
                 c = sm.to_rgba(lams[f,0])
             elif color_por == "lam_ef":
                 c = sm.to_rgba(lams_ef[f])
+            elif color_por == "tension":
+                c = sm.to_rgba(tensiones[f])
             elif color_por == "fibra":
                 c = sm.to_rgba(f)
             elif color_por == "reclutamiento":
@@ -557,115 +483,12 @@ class Mallita(object):
                 c = "k"
             # --
             if self.fibras.brokens[f]:
+                c = "gray"
+            elif lams_ef[f]<1.00001:
                 c = "k"
-            elif lams_ef[f]<1.:
-                c = "g"
             # --
-            ax.plot([x0,x1], [y0,y1], ls="-", c=c)
+            ax.plot([x0,x1], [y0,y1], ls="-", linewidth=linewidth, c=c)
         print
         if barracolor:
             sm._A = []
             fig.colorbar(sm)
-
-    # def graficar(self):
-    #     fig, ax = plt.subplots()
-    #     self.pregraficar(fig, ax)
-    #     plt.show()
-
-# nnodos = 6
-# r0 = np.array(
-#     [
-#         [0., 0.],
-#         [1., 0.],
-#         [1., 1.],
-#         [0., 1.],
-#         [.2, .5],
-#         [.8, .5]
-#     ],
-#     dtype=float
-# )
-# # tipos (1=frontera, 2=interseccion)
-# tipos = np.array(
-#     [1, 1, 1, 1, 2, 2],
-#     dtype=int
-# )
-
-# nodos = Nodos(nnodos, r0, tipos)
-
-# nfibras = 5
-# fibras_con = np.array(
-#     [
-#         [0,4],
-#         [1,5],
-#         [2,5],
-#         [3,4],
-#         [4,5]
-#     ],
-#     dtype=int
-# )
-# # parametros constitutivos
-# param = np.array(
-#     [
-#         [1.0, 10., .01],
-#         [1.0, 10., .01],
-#         [1.0, 10., .01],
-#         [1.0, 10., .01],
-#         [1.0, 10., .01]
-#     ],
-#     dtype=float
-# )
-
-# fibras = Fibras(nfibras, fibras_con, param)
-
-# m = Mallita(nodos, fibras)
-
-# Fmacro = np.array(
-#     [
-#         [1.1, 0.0],
-#         [0.1, 1.0]
-#     ],
-#     dtype=float
-# )
-
-
-# # # m.nodos.r[1,:] = [1.1, 0.]
-# # # m.nodos.r[2,:] = [1.1, 1.]
-# m.deformar_frontera(Fmacro)
-
-# print m.nodos.r0
-# print
-# print m.nodos.r
-# print
-
-# r = m.calcular_dr()
-
-# print r
-
-# m.nodos.r = r
-# m.graficar()
-
-# F = m.calcular_fuerzas()
-# print "F"
-# print F
-# print "---"
-
-# A, b = m.calcular_A_b()
-
-# print "A // b"
-# msg = ""
-# for n in range(m.nodos.n):
-#     for i in range(2):
-#         for o in range(m.nodos.n):
-#             msg += "{:12.2e}{:12.2e}".format(A[2*n+i,2*o+0],A[2*n+i,2*o+1])
-#         msg += "  //  "
-#         msg += "{:12.2e}".format(b[2*n+i,0])
-#         msg += "\n"
-# print msg
-# print "---"
-
-
-
-# dr = np.linalg.solve(A,b)
-# print "dr"
-# print dr
-# print "---"

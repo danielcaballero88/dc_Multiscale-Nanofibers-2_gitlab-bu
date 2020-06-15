@@ -4,9 +4,9 @@ import time
 from matplotlib import pyplot as plt
 import numpy as np
 
-SMALL_SIZE = 8
-MEDIUM_SIZE = 16
-BIGGER_SIZE = 18
+SMALL_SIZE = 12
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 24
 plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
 plt.rc('axes', labelsize=25)    # fontsize of the x and y labels
@@ -58,17 +58,18 @@ if False: # esto es para graficar alguna malla o mallas de archivos
     plt.show()
 
 
-if False: # esto es para leer de archivos pero para muchas mallas con parametros diferentes
-    Dm = 1.0
-    nfibs = 0.1
+if True: # esto es para leer de archivos pero para muchas mallas con parametros diferentes
+    Dm = 0.1
+    nfibs = 0.3
 
-    ncapss = [10]
-    Ls = [50.]
-    devangs_deg = [5., 10., 20.]
+    ncapss = [2]
+    Ls = [250.]
+    devangs_deg = [20.]
     dls_rel = [5.]
 
     nmallas = 1
 
+    cwd = "/home/dancab/Documents/academia/doctorado/articulos/multiscale_nanofibers_randomRVE_2/Analisis_geometria/13_comparacion_geometria_sim_exp/"
     cwd = "mallas/"
 
     for ncaps in ncapss:
@@ -90,13 +91,13 @@ if False: # esto es para leer de archivos pero para muchas mallas con parametros
                         print "leyendo malla"
                         mc = Mc.leer_de_archivo(archivo=nombrearchivo)
                         print "pregraficando"
-                        lrs, dlr, conteo, frecs, pdf = mc.get_histograma_lamr(lamr_min=1., lamr_max=1.6, nbins=10, binwidth=None, opcion="interfibras")
-                        frecs[-1] = 0. # para que quede mas lindo el grafico
+                        lrs, dlr, conteo, frecs, pdf = mc.get_histograma_lamr(lamr_min=1., lamr_max=1.8, nbins=10, binwidth=None, opcion="fibras", csv_file=nombrearchivo[:-4]+"_histograma_virtual_reclutamiento.csv")
+                        # frecs[-1] = 0. # para que quede mas lindo el grafico
                         fig = plt.figure(figsize=(8,6))
                         ax = fig.add_subplot(111)
                         fig, ax = graficar_histograma(lrs, frecs, figax=(fig,ax))
-                        ax.set_xlabel(r"Reclutamiento ($\lambda_r$)")
-                        ax.set_ylabel("Fraccion de fibras")
+                        ax.set_xlabel(r"Initial tortuosity")
+                        ax.set_ylabel("Fiber fraction")
                         # ax.set_xlim(left=1., right=list_maxlamsr[i])
                         # ax.set_xticks(list_xticks[i])
                         fig.tight_layout()
@@ -109,7 +110,7 @@ if False: # esto es para leer de archivos pero para muchas mallas con parametros
 
 
 
-if True: # Este es para crear mallas y graficar sus distr de reclut
+if False: # Este es para crear mallas y graficar sus distr de reclut
     Dm = 1.0
     nfibs = 0.1
 
